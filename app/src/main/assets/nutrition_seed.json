@@ -1,0 +1,222 @@
+[
+  {
+    "labelKey": "roti",
+    "displayName": "Whole Wheat Roti / Chapati",
+    "category": "Breads",
+    "defaultServingGrams": 40,
+    "kcalPer100g": 264,
+    "proteinPer100g": 9.1,
+    "carbsPer100g": 51.5,
+    "fatPer100g": 3.2,
+    "fiberPer100g": 11.2
+  },
+  {
+    "labelKey": "dal_tadka",
+    "displayName": "Dal Tadka (Yellow Lentils)",
+    "category": "Curries & Dal",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 116,
+    "proteinPer100g": 5.8,
+    "carbsPer100g": 14.2,
+    "fatPer100g": 4.1,
+    "fiberPer100g": 3.5
+  },
+  {
+    "labelKey": "steamed_rice",
+    "displayName": "Steamed White Rice",
+    "category": "Grains",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 130,
+    "proteinPer100g": 2.7,
+    "carbsPer100g": 28.2,
+    "fatPer100g": 0.3,
+    "fiberPer100g": 0.4
+  },
+  {
+    "labelKey": "paneer_bhurji",
+    "displayName": "Paneer Bhurji",
+    "category": "Curries & Dal",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 210,
+    "proteinPer100g": 13.5,
+    "carbsPer100g": 4.8,
+    "fatPer100g": 15.2,
+    "fiberPer100g": 1.2
+  },
+  {
+    "labelKey": "chicken_breast",
+    "displayName": "Grilled / Cooked Chicken Breast",
+    "category": "Poultry & Meat",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 165,
+    "proteinPer100g": 31.0,
+    "carbsPer100g": 0.0,
+    "fatPer100g": 3.6,
+    "fiberPer100g": 0.0
+  },
+  {
+    "labelKey": "oats",
+    "displayName": "Cooked Oatmeal",
+    "category": "Breakfast",
+    "defaultServingGrams": 200,
+    "kcalPer100g": 71,
+    "proteinPer100g": 2.5,
+    "carbsPer100g": 12.0,
+    "fatPer100g": 1.5,
+    "fiberPer100g": 1.7
+  },
+  {
+    "labelKey": "banana",
+    "displayName": "Fresh Banana",
+    "category": "Fruits",
+    "defaultServingGrams": 120,
+    "kcalPer100g": 89,
+    "proteinPer100g": 1.1,
+    "carbsPer100g": 22.8,
+    "fatPer100g": 0.3,
+    "fiberPer100g": 2.6
+  },
+  {
+    "labelKey": "boiled_egg",
+    "displayName": "Boiled Whole Egg",
+    "category": "Eggs & Dairy",
+    "defaultServingGrams": 50,
+    "kcalPer100g": 155,
+    "proteinPer100g": 12.6,
+    "carbsPer100g": 1.1,
+    "fatPer100g": 10.6,
+    "fiberPer100g": 0.0
+  },
+  {
+    "labelKey": "idli",
+    "displayName": "Steamed Idli",
+    "category": "South Indian",
+    "defaultServingGrams": 60,
+    "kcalPer100g": 132,
+    "proteinPer100g": 3.8,
+    "carbsPer100g": 28.0,
+    "fatPer100g": 0.4,
+    "fiberPer100g": 1.5
+  },
+  {
+    "labelKey": "dosa",
+    "displayName": "Plain Dosa",
+    "category": "South Indian",
+    "defaultServingGrams": 80,
+    "kcalPer100g": 168,
+    "proteinPer100g": 3.9,
+    "carbsPer100g": 29.2,
+    "fatPer100g": 3.7,
+    "fiberPer100g": 1.1
+  },
+  {
+    "labelKey": "rajma",
+    "displayName": "Rajma Curry (Kidney Beans)",
+    "category": "Curries & Dal",
+    "defaultServingGrams": 180,
+    "kcalPer100g": 140,
+    "proteinPer100g": 7.2,
+    "carbsPer100g": 18.5,
+    "fatPer100g": 4.2,
+    "fiberPer100g": 5.1
+  },
+  {
+    "labelKey": "chole",
+    "displayName": "Chole (Chickpea Curry)",
+    "category": "Curries & Dal",
+    "defaultServingGrams": 180,
+    "kcalPer100g": 158,
+    "proteinPer100g": 7.8,
+    "carbsPer100g": 20.1,
+    "fatPer100g": 5.5,
+    "fiberPer100g": 5.8
+  },
+  {
+    "labelKey": "palak_paneer",
+    "displayName": "Palak Paneer",
+    "category": "Curries & Dal",
+    "defaultServingGrams": 180,
+    "kcalPer100g": 182,
+    "proteinPer100g": 9.5,
+    "carbsPer100g": 6.2,
+    "fatPer100g": 13.8,
+    "fiberPer100g": 2.8
+  },
+  {
+    "labelKey": "poha",
+    "displayName": "Kanda Poha",
+    "category": "Breakfast",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 180,
+    "proteinPer100g": 3.5,
+    "carbsPer100g": 32.0,
+    "fatPer100g": 4.5,
+    "fiberPer100g": 2.0
+  },
+  {
+    "labelKey": "upma",
+    "displayName": "Rava Upma",
+    "category": "Breakfast",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 160,
+    "proteinPer100g": 4.0,
+    "carbsPer100g": 26.5,
+    "fatPer100g": 4.2,
+    "fiberPer100g": 1.8
+  },
+  {
+    "labelKey": "aloo_gobi",
+    "displayName": "Aloo Gobi Dry Curry",
+    "category": "Curries & Dal",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 110,
+    "proteinPer100g": 2.4,
+    "carbsPer100g": 15.2,
+    "fatPer100g": 4.8,
+    "fiberPer100g": 3.1
+  },
+  {
+    "labelKey": "chicken_biryani",
+    "displayName": "Chicken Biryani",
+    "category": "Rice Dishes",
+    "defaultServingGrams": 250,
+    "kcalPer100g": 200,
+    "proteinPer100g": 9.8,
+    "carbsPer100g": 24.5,
+    "fatPer100g": 7.2,
+    "fiberPer100g": 1.2
+  },
+  {
+    "labelKey": "curd",
+    "displayName": "Plain Curd / Yogurt",
+    "category": "Dairy",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 60,
+    "proteinPer100g": 3.5,
+    "carbsPer100g": 4.7,
+    "fatPer100g": 3.0,
+    "fiberPer100g": 0.0
+  },
+  {
+    "labelKey": "almonds",
+    "displayName": "Raw Almonds",
+    "category": "Nuts & Seeds",
+    "defaultServingGrams": 30,
+    "kcalPer100g": 579,
+    "proteinPer100g": 21.2,
+    "carbsPer100g": 21.6,
+    "fatPer100g": 49.9,
+    "fiberPer100g": 12.5
+  },
+  {
+    "labelKey": "apple",
+    "displayName": "Fresh Apple",
+    "category": "Fruits",
+    "defaultServingGrams": 150,
+    "kcalPer100g": 52,
+    "proteinPer100g": 0.3,
+    "carbsPer100g": 13.8,
+    "fatPer100g": 0.2,
+    "fiberPer100g": 2.4
+  }
+]
