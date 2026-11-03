@@ -38,10 +38,12 @@ graph TD
 - [ ] Advanced Stats: Total Session Volume, Estimated One-Rep Max (1RM) via Epley formula, PR badges.
 - [ ] On-Device Progressive Overload AI Coach (automatic weight/rep suggestions).
 
-### Phase 5: Strava-Style Social & Clubs (`PLANNED`)
+### Phase 5: Strava-Style Social & Clubs (`PLANNED` - Supabase Backend)
+- [ ] Migrate social backend architecture from Firebase to **Supabase** (PostgreSQL).
+- [ ] Implement `supabase-kt` Kotlin SDK for Authentication, Storage (Photos), and Realtime Feeds.
 - [ ] Activity Feed (Map route previews, photos, RPE badges, kudos).
-- [ ] Club System (Create/Join clubs, weekly distance/calorie leaderboards).
-- [ ] Collaborative Challenges (Shared team goals).
+- [ ] Club System (Create/Join clubs, complex relational queries for weekly distance/calorie leaderboards).
+- [ ] Collaborative Challenges (Shared team goals executed via fast SQL aggregation).
 
 ---
 
