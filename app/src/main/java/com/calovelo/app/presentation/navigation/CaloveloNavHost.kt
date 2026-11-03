@@ -1,46 +1,62 @@
 package com.calovelo.app.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.calovelo.app.presentation.dashboard.DashboardScreen
+import com.calovelo.app.presentation.main.MainViewModel
+import com.calovelo.app.presentation.theme.CaloTheme
+import com.calovelo.app.presentation.theme.CaloThemeId
 import com.calovelo.app.presentation.tracking.ActiveWorkoutScreen
 
 object Routes {
-    const val DASHBOARD = "dashboard"
+    const val MAIN = "main"
     const val TRACKING = "tracking"
 }
 
 /**
- * @param pendingRoute a route requested from outside the UI (e.g. a notification tap); it is
- * navigated to once and then reported through [onPendingRouteConsumed].
+ * Top-level nav host: switches between the main tabbed scaffold and the full-screen tracking screen.
  */
 @Composable
 fun CaloveloNavHost(
     navController: NavHostController = rememberNavController(),
-    pendingRoute: String? = null,
-    onPendingRouteConsumed: () -> Unit = {}
+    mainViewModel: MainViewModel = hiltViewModel(),
+    onOpenPrivacyPolicy: () -> Unit = {}
 ) {
-    LaunchedEffect(pendingRoute) {
-        if (pendingRoute != null) {
-            navController.navigate(pendingRoute) { launchSingleTop = true }
-            onPendingRouteConsumed()
-        }
-    }
+    val state by mainViewModel.uiState.collectAsStateWithLifecycle()
 
-    NavHost(navController = navController, startDestination = Routes.DASHBOARD) {
-        composable(Routes.DASHBOARD) {
-            DashboardScreen(
-                onStartWorkout = {
-                    navController.navigate(Routes.TRACKING) { launchSingleTop = true }
-                }
-            )
-        }
-        composable(Routes.TRACKING) {
-            ActiveWorkoutScreen(onNavigateBack = { navController.popBackStack() })
+    // Wrap in CaloTheme so ALL composables inside get themed tokens
+    CaloTheme(themeId = state.themeId) {
+        NavHost(navController = navController, startDestination = Routes.MAIN) {
+            composable(Routes.MAIN) {
+                MainScaffold(
+                    currentThemeId = state.themeId,
+                    remindersEnabled = state.remindersEnabled,
+                    userName = state.userName,
+                    heightCm = state.heightCm,
+                    weightKg = state.weightKg,
+                    dailyCalorieGoal = state.dailyCalorieGoal,
+                    dailyWaterGoalMl = state.dailyWaterGoalMl,
+                    weeklyDistanceGoalKm = state.weeklyDistanceGoalKm,
+                    waterIntakeMl = state.waterIntakeMl,
+                    onThemeSelected = mainViewModel::setTheme,
+                    onRemindersToggled = mainViewModel::setReminders,
+                    onSaveProfile = mainViewModel::saveProfile,
+                    onSaveGoals = mainViewModel::saveGoals,
+                    onQuickAddWater = { /* TODO: wire to hydration repo */ },
+                    onStartWorkout = {
+                        navController.navigate(Routes.TRACKING) { launchSingleTop = true }
+                    },
+                    onOpenPrivacyPolicy = onOpenPrivacyPolicy
+                )
+            }
+            composable(Routes.TRACKING) {
+                ActiveWorkoutScreen(onNavigateBack = { navController.popBackStack() })
+            }
         }
     }
 }
