@@ -37,6 +37,7 @@ graph TD
 - [ ] **Rich Exercise Guides Database**: 
   - Comprehensive catalog of exercises and variations (e.g., Barbell Bench Press vs. Dumbbell Floor Press).
   - Detailed execution guides (form cues, target muscles, common mistakes) displayed before/during the exercise.
+  - **3D Animated Graphics**: Embedded lightweight 3D animations (via Lottie or optimized WebGL/glTF assets) demonstrating perfect form and execution for each exercise.
 - [ ] **Structured Workout Flow**: 
   - User selects exercise $\rightarrow$ Views Guide $\rightarrow$ Logs Sets (Weight/Reps/RPE) $\rightarrow$ Reviews form/fatigue $\rightarrow$ Proceeds to next.
 - [ ] Advanced Stats: Total Session Volume, Estimated One-Rep Max (1RM) via Epley formula, PR badges.
