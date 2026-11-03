@@ -32,11 +32,17 @@ graph TD
 - [x] On-Device TFLite Vision Engine (`TfliteFoodDetector`, `BitmapPreprocessor` with graceful fallback).
 - [ ] CameraX Viewfinder (`FoodScannerScreen`) with bounding box tags and gram sliders.
 
-### Phase 4: Gym Strength Tracker & AI Analytics Engine (`PLANNED`)
+### Phase 4: Gym Strength Tracker, Exercise Guides & AI Analytics (`PLANNED`)
 - [x] Gym Workout Database Schema (`ExerciseCatalogEntity`, `WorkoutExerciseEntity`, `ExerciseSetEntity`).
-- [ ] Structured Set Logger (Muscle groups, weight, reps, RPE, notes).
+- [ ] **Rich Exercise Guides Database**: 
+  - Comprehensive catalog of exercises and variations (e.g., Barbell Bench Press vs. Dumbbell Floor Press).
+  - Detailed execution guides (form cues, target muscles, common mistakes) displayed before/during the exercise.
+- [ ] **Structured Workout Flow**: 
+  - User selects exercise $\rightarrow$ Views Guide $\rightarrow$ Logs Sets (Weight/Reps/RPE) $\rightarrow$ Reviews form/fatigue $\rightarrow$ Proceeds to next.
 - [ ] Advanced Stats: Total Session Volume, Estimated One-Rep Max (1RM) via Epley formula, PR badges.
-- [ ] On-Device Progressive Overload AI Coach (automatic weight/rep suggestions).
+- [ ] **AI Workout Generation & Analytics**: 
+  - On-Device Progressive Overload engine (automatic weight/rep suggestions).
+  - Deep analysis of historical performance to dynamically generate future workout plans based on recovery and goals.
 
 ### Phase 5: Strava-Style Social & Clubs (`PLANNED` - Supabase Backend)
 - [ ] Migrate social backend architecture from Firebase to **Supabase** (PostgreSQL).
