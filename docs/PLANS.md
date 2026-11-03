@@ -30,7 +30,12 @@ graph TD
 - [x] Local Seeded Nutrition Catalog (`nutrition_seed.json` with 20+ Indian & global foods).
 - [x] Room Database v3 (`FoodCatalogEntity`, `MealLogEntity`, explicit migration).
 - [x] On-Device TFLite Vision Engine (`TfliteFoodDetector`, `BitmapPreprocessor` with graceful fallback).
-- [ ] CameraX Viewfinder (`FoodScannerScreen`) with bounding box tags and gram sliders.
+- [ ] CameraX Viewfinder (`FoodScannerScreen`) with bounding box tags and 2D area heuristics for portion estimation.
+
+### Phase 3.5: Advanced AR-Powered 3D Food Volume Estimation (`RESEARCH UPGRADE`)
+- [ ] **Instance Segmentation**: Upgrade from YOLOv8 (bounding boxes) to YOLOv8-Seg (pixel-perfect masks) trained on the *Nutrition5k* dataset.
+- [ ] **ARCore Depth API**: Map the physical table in 3D to acquire exact real-world scale (cm/mm) without reference coins.
+- [ ] **Density-to-Mass Engine**: Calculate exact weight using $Volume \times Density$ (g/cm³) based on scientific food density tables.
 
 ### Phase 4: Gym Strength Tracker, Exercise Guides & AI Analytics (`PLANNED`)
 - [x] Gym Workout Database Schema (`ExerciseCatalogEntity`, `WorkoutExerciseEntity`, `ExerciseSetEntity`).
