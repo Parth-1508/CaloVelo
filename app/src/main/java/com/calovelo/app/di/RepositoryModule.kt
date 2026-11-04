@@ -1,11 +1,14 @@
+// app/src/main/java/com/calovelo/app/di/RepositoryModule.kt
 package com.calovelo.app.di
 
 import com.calovelo.app.data.repository.HealthRepositoryImpl
 import com.calovelo.app.data.repository.HydrationRepositoryImpl
+import com.calovelo.app.data.repository.NutritionRepositoryImpl
 import com.calovelo.app.data.repository.WorkoutRepositoryImpl
 import com.calovelo.app.data.settings.DataStoreSettingsRepository
 import com.calovelo.app.domain.repository.HealthRepository
 import com.calovelo.app.domain.repository.HydrationRepository
+import com.calovelo.app.domain.repository.NutritionRepository
 import com.calovelo.app.domain.repository.ReminderScheduler
 import com.calovelo.app.domain.repository.SettingsRepository
 import com.calovelo.app.domain.repository.WorkoutRepository
@@ -38,4 +41,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindReminderScheduler(impl: WorkManagerReminderScheduler): ReminderScheduler
+
+    @Binds
+    abstract fun bindNutritionRepository(impl: NutritionRepositoryImpl): NutritionRepository
 }
