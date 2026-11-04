@@ -5,13 +5,18 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.calovelo.app.data.local.dao.ExerciseCatalogDao
 import com.calovelo.app.data.local.dao.FoodCatalogDao
+import com.calovelo.app.data.local.dao.GymWorkoutDao
 import com.calovelo.app.data.local.dao.HealthSummaryDao
 import com.calovelo.app.data.local.dao.MealLogDao
 import com.calovelo.app.data.local.dao.WaterLogDao
 import com.calovelo.app.data.local.dao.WorkoutSessionDao
 import com.calovelo.app.data.local.entity.DailyHealthSummaryEntity
+import com.calovelo.app.data.local.entity.ExerciseCatalogEntity
+import com.calovelo.app.data.local.entity.ExerciseSetEntity
 import com.calovelo.app.data.local.entity.FoodCatalogEntity
+import com.calovelo.app.data.local.entity.GymWorkoutEntity
 import com.calovelo.app.data.local.entity.MealLogEntity
 import com.calovelo.app.data.local.entity.WaterLogEntity
 import com.calovelo.app.data.local.entity.WorkoutSessionEntity
@@ -22,9 +27,12 @@ import com.calovelo.app.data.local.entity.WorkoutSessionEntity
         WaterLogEntity::class,
         WorkoutSessionEntity::class,
         FoodCatalogEntity::class,
-        MealLogEntity::class
+        MealLogEntity::class,
+        ExerciseCatalogEntity::class,
+        GymWorkoutEntity::class,
+        ExerciseSetEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class CaloveloDatabase : RoomDatabase() {
@@ -33,6 +41,8 @@ abstract class CaloveloDatabase : RoomDatabase() {
     abstract fun workoutSessionDao(): WorkoutSessionDao
     abstract fun foodCatalogDao(): FoodCatalogDao
     abstract fun mealLogDao(): MealLogDao
+    abstract fun exerciseCatalogDao(): ExerciseCatalogDao
+    abstract fun gymWorkoutDao(): GymWorkoutDao
 
     companion object {
         const val DATABASE_NAME = "calovelo_db"
@@ -117,6 +127,73 @@ abstract class CaloveloDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_meal_log_date_epoch_day_status` " +
                         "ON `meal_log` (`date_epoch_day`, `status`)"
+                )
+            }
+        }
+
+        /**
+         * v3 -> v4 (Phase 4): adds the exercise_catalog, gym_workout and exercise_set tables. Existing
+         * data is untouched. The catalog is created empty and filled from assets/gym_seed.json by
+         * GymCatalogSeeder. As with the earlier migrations, the DDL must match the Room-generated schema
+         * exactly (column types, NOT NULL, index names, foreign key), otherwise Room refuses to open the DB.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `exercise_catalog` (" +
+                        "`exercise_id` TEXT NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`muscle_group` TEXT NOT NULL, " +
+                        "`equipment_type` TEXT NOT NULL, " +
+                        "`instructions` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`exercise_id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_exercise_catalog_name` " +
+                        "ON `exercise_catalog` (`name`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_exercise_catalog_muscle_group` " +
+                        "ON `exercise_catalog` (`muscle_group`)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `gym_workout` (" +
+                        "`session_id` TEXT NOT NULL, " +
+                        "`epoch_day` INTEGER NOT NULL, " +
+                        "`start_time` INTEGER NOT NULL, " +
+                        "`end_time` INTEGER, " +
+                        "`notes` TEXT, " +
+                        "PRIMARY KEY(`session_id`))"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_gym_workout_epoch_day` " +
+                        "ON `gym_workout` (`epoch_day`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_gym_workout_start_time` " +
+                        "ON `gym_workout` (`start_time`)"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `exercise_set` (" +
+                        "`set_id` TEXT NOT NULL, " +
+                        "`workout_id` TEXT NOT NULL, " +
+                        "`exercise_id` TEXT NOT NULL, " +
+                        "`set_index` INTEGER NOT NULL, " +
+                        "`weight_kg` REAL NOT NULL, " +
+                        "`reps` INTEGER NOT NULL, " +
+                        "`rpe` REAL, " +
+                        "`set_type` TEXT NOT NULL, " +
+                        "PRIMARY KEY(`set_id`), " +
+                        "FOREIGN KEY(`workout_id`) REFERENCES `gym_workout`(`session_id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_exercise_set_workout_id_exercise_id_set_index` " +
+                        "ON `exercise_set` (`workout_id`, `exercise_id`, `set_index`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_exercise_set_exercise_id` " +
+                        "ON `exercise_set` (`exercise_id`)"
                 )
             }
         }
