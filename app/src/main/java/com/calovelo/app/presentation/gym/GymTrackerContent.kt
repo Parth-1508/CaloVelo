@@ -82,7 +82,7 @@ fun GymTrackerContent(
 
     if (finishPromptActive) {
         RpeFeedbackBottomSheet(
-            pending = com.calovelo.app.presentation.tracking.ActiveWorkoutUiState.PendingFeedback(uiState.session!!.sessionId, RpeScale.DEFAULT.toFloat(), null),
+            pending = com.calovelo.app.domain.model.PendingFeedback(uiState.session!!.sessionId, com.calovelo.app.domain.model.ActivityType.RUNNING, 0L, 0.0),
             isSaving = uiState.isBusy,
             onSave = { _, _, notes ->
                 viewModel.onFinishSession(notes)
