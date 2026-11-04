@@ -103,6 +103,9 @@ dependencies {
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
     implementation(libs.kotlinx.serialization.json)
+    
+    // Guava (Required for CameraX ListenableFuture)
+    implementation("com.google.guava:guava:32.1.3-android")
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

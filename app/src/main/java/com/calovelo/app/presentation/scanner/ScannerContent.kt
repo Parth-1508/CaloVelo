@@ -1,5 +1,21 @@
 package com.calovelo.app.presentation.scanner
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.Image
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,28 +32,46 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.calovelo.app.domain.model.ImageSource
 import com.calovelo.app.presentation.theme.CaloTheme
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 
 @Composable
 fun ScannerContent(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: FoodScannerViewModel = hiltViewModel()
 ) {
     val tokens = CaloTheme.tokens
-    var portionWeight by remember { mutableStateOf(250f) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    val baseCalories = 420
-    val baseProtein = 28
-    val baseCarbs = 45
-    val baseFat = 14
+    var hasCameraPermission by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+    }
+    
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        hasCameraPermission = granted
+    }
 
-    val multiplier = portionWeight / 250f
-    val calories = (baseCalories * multiplier).toInt()
-    val protein = (baseProtein * multiplier).toInt()
-    val carbs = (baseCarbs * multiplier).toInt()
-    val fat = (baseFat * multiplier).toInt()
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    val imageCapture = remember { ImageCapture.Builder().build() }
+    val preview = remember { Preview.Builder().build() }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -46,7 +80,6 @@ fun ScannerContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -61,18 +94,26 @@ fun ScannerContent(
                     Text("Meal & Macro Detection", style = MaterialTheme.typography.headlineMedium, color = tokens.text, fontWeight = FontWeight.Bold)
                 }
                 Badge(containerColor = tokens.aiStateContainer ?: tokens.surface) {
-                    Text("AI Ready", color = tokens.aiMark, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                    Text(
+                        text = when (uiState.phase) {
+                            ScannerPhase.LIVE -> "AI Ready"
+                            ScannerPhase.ANALYZING -> "Analyzing..."
+                            ScannerPhase.REVIEW -> "Reviewing"
+                        },
+                        color = tokens.aiMark,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
                 }
             }
 
-            // Viewfinder Placeholder with Bounding Boxes
+            // Viewfinder / Captured Image Display
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = tokens.surface,
                 border = BorderStroke(1.dp, tokens.border),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp)
+                    .weight(1f) // Takes up remaining space
             ) {
                 Box(
                     modifier = Modifier
@@ -80,112 +121,141 @@ fun ScannerContent(
                         .background(tokens.mapBackground),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Viewfinder",
-                        tint = tokens.muted.copy(alpha = 0.5f),
-                        modifier = Modifier.size(64.dp)
-                    )
-
-                    // Simulated Bounding Boxes
-                    Box(
-                        modifier = Modifier
-                            .offset(x = (-60).dp, y = (-30).dp)
-                            .size(100.dp, 70.dp)
-                            .border(2.dp, tokens.aiMark, RoundedCornerShape(8.dp))
-                            .padding(4.dp),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        Surface(
-                            color = tokens.aiMark,
-                            shape = RoundedCornerShape(4.dp)
+                    if (uiState.phase == ScannerPhase.LIVE && hasCameraPermission) {
+                        AndroidView(
+                            factory = { ctx ->
+                                val previewView = PreviewView(ctx)
+                                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                                cameraProviderFuture.addListener({
+                                    val cameraProvider = cameraProviderFuture.get()
+                                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                                    try {
+                                        cameraProvider.unbindAll()
+                                        cameraProvider.bindToLifecycle(
+                                            lifecycleOwner,
+                                            cameraSelector,
+                                            preview,
+                                            imageCapture
+                                        )
+                                        preview.setSurfaceProvider(previewView.surfaceProvider)
+                                    } catch (e: Exception) {
+                                        // Handle error
+                                    }
+                                }, ContextCompat.getMainExecutor(ctx))
+                                previewView
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        
+                        // Capture Button Overlay
+                        FloatingActionButton(
+                            onClick = {
+                                imageCapture.takePicture(
+                                    ContextCompat.getMainExecutor(context),
+                                    object : ImageCapture.OnImageCapturedCallback() {
+                                        override fun onCaptureSuccess(image: ImageProxy) {
+                                            val buffer = image.planes[0].buffer
+                                            val bytes = ByteArray(buffer.remaining())
+                                            buffer.get(bytes)
+                                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                            val matrix = Matrix().apply { postRotate(image.imageInfo.rotationDegrees.toFloat()) }
+                                            val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                                            
+                                            val stream = ByteArrayOutputStream()
+                                            rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                                            val jpegBytes = stream.toByteArray()
+                                            
+                                            viewModel.onPhotoReady(
+                                                source = ImageSource { ByteArrayInputStream(jpegBytes) },
+                                                previewModel = rotatedBitmap
+                                            )
+                                            image.close()
+                                        }
+                                        
+                                        override fun onError(exception: ImageCaptureException) {
+                                            viewModel.onCaptureFailed()
+                                        }
+                                    }
+                                )
+                            },
+                            containerColor = tokens.aiMark,
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp)
                         ) {
-                            Text("Paneer 96%", color = tokens.aiInk, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 4.dp))
+                            Icon(Icons.Default.CameraAlt, contentDescription = "Capture", tint = tokens.aiInk)
                         }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .offset(x = 70.dp, y = 20.dp)
-                            .size(90.dp, 80.dp)
-                            .border(2.dp, tokens.energyMark, RoundedCornerShape(8.dp))
-                            .padding(4.dp),
-                        contentAlignment = Alignment.TopStart
-                    ) {
-                        Surface(
-                            color = tokens.energyMark,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text("Roti 94%", color = tokens.onStart, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 4.dp))
+                    } else if (uiState.phase == ScannerPhase.LIVE && !hasCameraPermission) {
+                        Text("Camera permission required", color = tokens.muted)
+                    } else {
+                        // Display captured image or status
+                        if (uiState.phase == ScannerPhase.ANALYZING) {
+                            CircularProgressIndicator(color = tokens.aiMark)
+                        } else if (uiState.status is ScanStatus.ModelUnavailable) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.CloudOff, contentDescription = null, tint = tokens.muted, modifier = Modifier.size(48.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("Offline model not loaded yet.", color = tokens.text)
+                                Text((uiState.status as ScanStatus.ModelUnavailable).reason, color = tokens.muted, style = MaterialTheme.typography.bodySmall)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = viewModel::onRetake,
+                                    colors = ButtonDefaults.buttonColors(containerColor = tokens.startFill, contentColor = tokens.onStart)
+                                ) {
+                                    Text("Retake Photo")
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Portion Adjustment Slider
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+            if (uiState.phase == ScannerPhase.REVIEW && uiState.items.isNotEmpty()) {
+                val totalCalories = uiState.items.sumOf { it.food.kcalPer100g * it.grams / 100.0 }.toInt()
+                val totalProtein = uiState.items.sumOf { it.food.proteinPer100g * it.grams / 100.0 }.toInt()
+                val totalCarbs = uiState.items.sumOf { it.food.carbsPer100g * it.grams / 100.0 }.toInt()
+                val totalFat = uiState.items.sumOf { it.food.fatPer100g * it.grams / 100.0 }.toInt()
+
+                // Thermal MealDeck Macros
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = tokens.surface,
+                    border = BorderStroke(1.dp, tokens.border),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text("Portion Adjustment", style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
-                        Text("${portionWeight.toInt()}g", style = MaterialTheme.typography.titleSmall, color = tokens.aiMark, fontWeight = FontWeight.Bold)
-                    }
-                    Slider(
-                        value = portionWeight,
-                        onValueChange = { portionWeight = it },
-                        valueRange = 50f..500f,
-                        steps = 8
-                    )
-                }
-            }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Thermal MealDeck", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                            Text("$totalCalories kcal", style = MaterialTheme.typography.titleMedium, color = tokens.energyMark, fontWeight = FontWeight.Bold)
+                        }
 
-            // Thermal MealDeck Macros
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Thermal MealDeck", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                        Text("$calories kcal", style = MaterialTheme.typography.titleMedium, color = tokens.energyMark, fontWeight = FontWeight.Bold)
-                    }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            MacroNutrientCard("Protein", "${totalProtein}g", tokens.proteinMark, tokens)
+                            MacroNutrientCard("Carbs", "${totalCarbs}g", tokens.carbsMark, tokens)
+                            MacroNutrientCard("Fat", "${totalFat}g", tokens.fatMark, tokens)
+                        }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        MacroNutrientCard("Protein", "${protein}g", tokens.proteinMark, tokens)
-                        MacroNutrientCard("Carbs", "${carbs}g", tokens.carbsMark, tokens)
-                        MacroNutrientCard("Fat", "${fat}g", tokens.fatMark, tokens)
-                    }
-
-                    Button(
-                        onClick = {},
-                        colors = ButtonDefaults.buttonColors(containerColor = tokens.aiMark, contentColor = tokens.aiInk),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Log Meal to Journal")
+                        Button(
+                            onClick = viewModel::onSave,
+                            colors = ButtonDefaults.buttonColors(containerColor = tokens.aiMark, contentColor = tokens.aiInk),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Log Meal to Journal")
+                        }
+                        
+                        TextButton(onClick = viewModel::onRetake, modifier = Modifier.fillMaxWidth()) {
+                            Text("Retake Photo", color = tokens.muted)
+                        }
                     }
                 }
             }
