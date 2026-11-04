@@ -137,49 +137,61 @@ fun EmeraldHomeVariant(
 ) {
     val tokens = CaloTheme.tokens
 
-    Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
-        // Hero Glassmorphic Card (Gauges)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(tokens.surface.copy(alpha = 0.4f))
-                .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
-                .padding(24.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        // Flat, elegant dashboard card instead of giant glass bubble
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = tokens.surface,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Energy & Hydration", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Text("Today's Energy", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
                     Box(
                         modifier = Modifier
-                            .background((tokens.greenStateContainer ?: tokens.surface).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .background((tokens.greenStateContainer ?: tokens.surface.copy(alpha = 0.5f)), RoundedCornerShape(12.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text("Active", color = tokens.energyMark, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                // Tight layout: Gauge on left, macros stacked on right
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     DualProgressGauge(
                         caloriesProgress = caloriesProgress,
                         netCalories = netCalories,
                         hydrationProgress = hydrationProgress,
                         hydrationText = hydrationText
                     )
+                    
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        MiniMacroBar("Protein", "124g", tokens.proteinMark, tokens)
+                        MiniMacroBar("Carbs", "210g", tokens.carbsMark, tokens)
+                        MiniMacroBar("Fat", "68g", tokens.fatMark, tokens)
+                    }
                 }
-
-                MacroPillRow()
             }
         }
 
-        // Quick Actions (Watch Order Engine style pills)
+        // Quick Actions (Compact, unified row)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             QuickActionPill(
                 icon = Icons.Default.DirectionsRun,
@@ -192,27 +204,31 @@ fun EmeraldHomeVariant(
             QuickActionPill(
                 icon = Icons.Default.Restaurant,
                 text = "Scan",
-                color = tokens.nutritionMark,
-                textColor = Color.White,
+                color = tokens.surface,
+                textColor = tokens.text,
                 onClick = onOpenScanner,
+                modifier = Modifier.weight(1f)
+            )
+            QuickActionPill(
+                icon = Icons.Default.WaterDrop,
+                text = "Water",
+                color = tokens.surface,
+                textColor = tokens.text,
+                onClick = {}, // TODO wire
                 modifier = Modifier.weight(1f)
             )
         }
 
-        // Recent Activity Deep Dive
+        // Recent Activity 
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("RECENT ACTIVITY", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("RECENT ACTIVITY", style = MaterialTheme.typography.labelSmall, color = tokens.muted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(tokens.surface.copy(alpha = 0.6f))
-                    .clickable(onClick = onStartWorkout)
-                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
-                    .padding(20.dp)
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = tokens.surface,
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onStartWorkout)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -236,7 +252,7 @@ fun EmeraldHomeVariant(
                     }
 
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         MetricMiniStat("Distance", "8.42 km", tokens)
@@ -390,35 +406,20 @@ fun DualProgressGauge(
     }
 }
 
-@Composable
-fun MacroPillRow() {
-    val tokens = CaloTheme.tokens
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item { MacroPill("Protein", "124g", tokens.proteinMark, tokens) }
-        item { MacroPill("Carbs", "210g", tokens.carbsMark, tokens) }
-        item { MacroPill("Fat", "68g", tokens.fatMark, tokens) }
-    }
-}
+// Removed unused MacroPillRow
 
 @Composable
-fun MacroPill(label: String, value: String, accent: Color, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
-    Box(
-        modifier = Modifier
-            .width(100.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(tokens.surface.copy(alpha = 0.6f))
-            .border(1.dp, tokens.border.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-            .padding(16.dp)
+fun MiniMacroBar(label: String, value: String, accent: Color, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(accent))
-            Spacer(Modifier.height(8.dp))
-            Text(value, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
             Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted)
         }
+        Text(value, style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
     }
 }
 
