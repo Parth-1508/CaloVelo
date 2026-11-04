@@ -13,6 +13,8 @@ import com.calovelo.app.domain.repository.ReminderScheduler
 import com.calovelo.app.domain.repository.SettingsRepository
 import com.calovelo.app.domain.repository.WorkoutRepository
 import com.calovelo.app.domain.repository.WorkoutServiceLauncher
+import com.calovelo.app.data.repository.GymRepositoryImpl
+import com.calovelo.app.domain.repository.GymRepository
 import com.calovelo.app.service.WorkoutServiceLauncherImpl
 import com.calovelo.app.worker.WorkManagerReminderScheduler
 import dagger.Binds
@@ -32,6 +34,9 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindWorkoutRepository(impl: WorkoutRepositoryImpl): WorkoutRepository
+
+    @Binds
+    abstract fun bindGymRepository(impl: GymRepositoryImpl): GymRepository
 
     @Binds
     abstract fun bindWorkoutServiceLauncher(impl: WorkoutServiceLauncherImpl): WorkoutServiceLauncher

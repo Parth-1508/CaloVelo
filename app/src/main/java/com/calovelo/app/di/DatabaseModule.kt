@@ -43,6 +43,12 @@ object DatabaseModule {
     fun provideWorkoutSessionDao(db: CaloveloDatabase): WorkoutSessionDao = db.workoutSessionDao()
 
     @Provides
+    fun provideExerciseCatalogDao(db: CaloveloDatabase) = db.exerciseCatalogDao()
+
+    @Provides
+    fun provideGymWorkoutDao(db: CaloveloDatabase) = db.gymWorkoutDao()
+
+    @Provides
     fun provideFoodCatalogDao(db: CaloveloDatabase): FoodCatalogDao = db.foodCatalogDao()
 
     @Provides
