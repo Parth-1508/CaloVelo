@@ -5,7 +5,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,18 +53,27 @@ fun HomeContent(
     val caloriesProgress = if (dailyCalorieGoal > 0) (consumedKcal.toFloat() / dailyCalorieGoal).coerceIn(0f, 1f) else 0f
     val hydrationProgress = if (dailyWaterGoalMl > 0) (waterIntakeMl.toFloat() / dailyWaterGoalMl).coerceIn(0f, 1f) else 0f
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = tokens.background
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        tokens.background,
+                        tokens.surface.copy(alpha = 0.2f),
+                        tokens.background
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            // Header / Greeting
+            // Premium Glassmorphic Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -69,31 +81,30 @@ fun HomeContent(
             ) {
                 Column {
                     Text(
-                        text = if (tokens.themeId == CaloThemeId.ThermalDark) "THERMAL ENGINE" else "CALOVELO ACTIVE",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = tokens.muted,
-                        fontWeight = FontWeight.Bold
+                        text = "TODAY's OVERVIEW",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tokens.energyMark,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp
                     )
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = "Hello, $userName",
                         style = MaterialTheme.typography.headlineMedium,
                         color = tokens.text,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Black,
+                        fontSize = 32.sp
                     )
                 }
-                Surface(
-                    shape = CircleShape,
-                    color = tokens.surface,
-                    border = BorderStroke(1.dp, tokens.border),
-                    modifier = Modifier.size(44.dp)
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(tokens.surface.copy(alpha = 0.6f))
+                        .border(1.dp, tokens.border.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = tokens.text
-                        )
-                    }
+                    Icon(Icons.Default.Person, contentDescription = "Profile", tint = tokens.text, modifier = Modifier.size(28.dp))
                 }
             }
 
@@ -109,6 +120,8 @@ fun HomeContent(
                     onOpenScanner = onOpenScanner
                 )
             }
+            
+            Spacer(Modifier.height(80.dp)) // padding for bottom nav
         }
     }
 }
@@ -124,39 +137,33 @@ fun EmeraldHomeVariant(
 ) {
     val tokens = CaloTheme.tokens
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Dual Progress Gauge Card (Net Calories & Hydration)
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = tokens.surface,
-            border = BorderStroke(1.dp, tokens.border),
-            modifier = Modifier.fillMaxWidth()
+    Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
+        // Hero Glassmorphic Card (Gauges)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .background(tokens.surface.copy(alpha = 0.4f))
+                .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                .padding(24.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "Daily Energy & Hydration",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = tokens.text,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Badge(containerColor = tokens.greenStateContainer ?: tokens.surface) {
-                        Text("Active", color = tokens.energyMark, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                    Text("Energy & Hydration", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Box(
+                        modifier = Modifier
+                            .background((tokens.greenStateContainer ?: tokens.surface).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("Active", color = tokens.energyMark, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     DualProgressGauge(
                         caloriesProgress = caloriesProgress,
                         netCalories = netCalories,
@@ -169,53 +176,73 @@ fun EmeraldHomeVariant(
             }
         }
 
-        // Week Strip
-        WeekStrip()
-
-        // Recent Run Card
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = tokens.surface,
-            border = BorderStroke(1.dp, tokens.border),
-            modifier = Modifier.fillMaxWidth()
+        // Quick Actions (Watch Order Engine style pills)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            QuickActionPill(
+                icon = Icons.Default.DirectionsRun,
+                text = "Run",
+                color = tokens.startFill,
+                textColor = tokens.onStart,
+                onClick = onStartWorkout,
+                modifier = Modifier.weight(1f)
+            )
+            QuickActionPill(
+                icon = Icons.Default.Restaurant,
+                text = "Scan",
+                color = tokens.nutritionMark,
+                textColor = Color.White,
+                onClick = onOpenScanner,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Recent Activity Deep Dive
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("RECENT ACTIVITY", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(tokens.surface.copy(alpha = 0.6f))
+                    .clickable(onClick = onStartWorkout)
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+                    .padding(20.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.DirectionsRun, contentDescription = null, tint = tokens.energyMark)
-                        Text("Morning Tempo Run", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.SemiBold)
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(tokens.energyMark.copy(alpha = 0.15f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.DirectionsRun, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Text("Morning Tempo Run", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                                Text("Today, 7:30 AM", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                            }
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted)
                     }
-                    Text("Today, 7:30 AM", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    MetricMiniStat("Distance", "8.42 km", tokens)
-                    MetricMiniStat("Duration", "42:15", tokens)
-                    MetricMiniStat("Pace", "5:01 /km", tokens)
-                    MetricMiniStat("Burn", "610 kcal", tokens)
-                }
-
-                Button(
-                    onClick = onStartWorkout,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = tokens.startFill,
-                        contentColor = tokens.onStart
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Start New Workout")
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        MetricMiniStat("Distance", "8.42 km", tokens)
+                        MetricMiniStat("Duration", "42:15", tokens)
+                        MetricMiniStat("Pace", "5:01 /km", tokens)
+                    }
                 }
             }
         }
@@ -229,177 +256,100 @@ fun ThermalHomeVariant(
 ) {
     val tokens = CaloTheme.tokens
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Concentric Energy/Steps Gauge Card
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = tokens.surface,
-            border = BorderStroke(1.dp, tokens.border),
-            modifier = Modifier.fillMaxWidth()
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        // Hero Concentric Engine
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .background(tokens.surface.copy(alpha = 0.6f))
+                .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 Text(
-                    "THERMAL OUTPUT & RECOVERY",
-                    style = MaterialTheme.typography.labelSmall,
+                    "DAILY THERMAL LOAD",
+                    style = MaterialTheme.typography.labelMedium,
                     color = tokens.energyMark,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp
                 )
 
                 Box(
-                    modifier = Modifier.size(200.dp),
+                    modifier = Modifier.size(240.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     val progressAnim by animateFloatAsState(targetValue = 0.88f, animationSpec = tween(1200))
                     val stepsAnim by animateFloatAsState(targetValue = 0.65f, animationSpec = tween(1200))
 
                     Canvas(modifier = Modifier.fillMaxSize()) {
-                        val strokeWidth = 16.dp.toPx()
-
-                        // Outer ring (Energy)
-                        drawArc(
-                            color = tokens.border,
-                            startAngle = 0f,
-                            sweepAngle = 360f,
-                            useCenter = false,
-                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
-                        )
+                        val strokeWidth = 18.dp.toPx()
+                        drawArc(tokens.border, 0f, 360f, false, style = Stroke(strokeWidth, cap = StrokeCap.Round))
                         drawArc(
                             brush = Brush.sweepGradient(listOf(tokens.energyMark, tokens.nutritionMark)),
-                            startAngle = -90f,
-                            sweepAngle = 360f * progressAnim,
-                            useCenter = false,
+                            startAngle = -90f, sweepAngle = 360f * progressAnim, useCenter = false,
                             style = Stroke(strokeWidth, cap = StrokeCap.Round)
                         )
-
-                        // Inner ring (Steps / Load)
+                        drawArc(tokens.border, 0f, 360f, false, style = Stroke(strokeWidth * 0.7f, cap = StrokeCap.Round), topLeft = Offset(strokeWidth * 0.8f, strokeWidth * 0.8f), size = Size(size.width - strokeWidth * 1.6f, size.height - strokeWidth * 1.6f))
                         drawArc(
-                            color = tokens.border,
-                            startAngle = 0f,
-                            sweepAngle = 360f,
-                            useCenter = false,
-                            style = Stroke(strokeWidth * 0.75f, cap = StrokeCap.Round),
-                            topLeft = Offset(strokeWidth * 0.75f, strokeWidth * 0.75f),
-                            size = Size(size.width - strokeWidth * 1.5f, size.height - strokeWidth * 1.5f)
-                        )
-                        drawArc(
-                            color = tokens.hydrationMark,
-                            startAngle = -90f,
-                            sweepAngle = 360f * stepsAnim,
-                            useCenter = false,
-                            style = Stroke(strokeWidth * 0.75f, cap = StrokeCap.Round),
-                            topLeft = Offset(strokeWidth * 0.75f, strokeWidth * 0.75f),
-                            size = Size(size.width - strokeWidth * 1.5f, size.height - strokeWidth * 1.5f)
+                            color = tokens.hydrationMark, startAngle = -90f, sweepAngle = 360f * stepsAnim, useCenter = false,
+                            style = Stroke(strokeWidth * 0.7f, cap = StrokeCap.Round), topLeft = Offset(strokeWidth * 0.8f, strokeWidth * 0.8f), size = Size(size.width - strokeWidth * 1.6f, size.height - strokeWidth * 1.6f)
                         )
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("2,480", style = MaterialTheme.typography.headlineLarge, color = tokens.text, fontWeight = FontWeight.Bold)
-                        Text("Kcal Burned", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("12,450", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                        Text("Steps", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("94%", style = MaterialTheme.typography.titleMedium, color = tokens.energyMark, fontWeight = FontWeight.Bold)
-                        Text("Recovery", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                        Text("2,480", style = MaterialTheme.typography.displaySmall, color = tokens.text, fontWeight = FontWeight.Black)
+                        Text("Kcal Burned", style = MaterialTheme.typography.labelMedium, color = tokens.muted, letterSpacing = 1.sp)
                     }
                 }
             }
         }
 
-        // Two Bento Cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.weight(1f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = tokens.nutritionMark)
-                    Text("AI Meal Scan", style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
-                    Text("Analyze macro breakdown instantly.", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    TextButton(onClick = onOpenScanner) {
-                        Text("Scan Now", color = tokens.nutritionMark)
-                    }
-                }
+        // Glassmorphic Action Blocks
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            GlassCard(modifier = Modifier.weight(1f).clickable { onOpenScanner() }, tokens) {
+                Icon(Icons.Default.RestaurantMenu, contentDescription = null, tint = tokens.nutritionMark, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.height(12.dp))
+                Text("Scan Meal", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                Text("Analyze macros", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
             }
-
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.weight(1f)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Default.FlashOn, contentDescription = null, tint = tokens.energyMark)
-                    Text("Power Surge", style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
-                    Text("Threshold intervals active today.", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    TextButton(onClick = onStartWorkout) {
-                        Text("Start Session", color = tokens.energyMark)
-                    }
-                }
+            GlassCard(modifier = Modifier.weight(1f).clickable { onStartWorkout() }, tokens) {
+                Icon(Icons.Default.FlashOn, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.height(12.dp))
+                Text("Train", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                Text("Start activity", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
             }
         }
+    }
+}
 
-        // Crew Invitation Card
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = tokens.surface,
-            border = BorderStroke(1.dp, tokens.border),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = tokens.aiStateContainer ?: tokens.surface,
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Group, contentDescription = null, tint = tokens.aiMark)
-                        }
-                    }
-                    Column {
-                        Text("Sunset Striders Invitation", style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
-                        Text("12 crew members riding at 6:00 PM", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    }
-                }
-                Button(
-                    onClick = {},
-                    colors = ButtonDefaults.buttonColors(containerColor = tokens.aiMark, contentColor = tokens.aiInk)
-                ) {
-                    Text("Join")
-                }
-            }
+@Composable
+fun GlassCard(modifier: Modifier = Modifier, tokens: com.calovelo.app.presentation.theme.CaloTokens, content: @Composable ColumnScope.() -> Unit) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(tokens.surface.copy(alpha = 0.5f))
+            .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+            .padding(20.dp)
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+fun QuickActionPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, color: Color, textColor: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(color)
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(20.dp))
+            Text(text, color = textColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }
@@ -413,28 +363,29 @@ fun DualProgressGauge(
 ) {
     val tokens = CaloTheme.tokens
     Box(
-        modifier = Modifier.size(160.dp),
+        modifier = Modifier.size(200.dp),
         contentAlignment = Alignment.Center
     ) {
-        val calAnim by animateFloatAsState(targetValue = caloriesProgress, animationSpec = tween(1000))
-        val hydAnim by animateFloatAsState(targetValue = hydrationProgress, animationSpec = tween(1000))
+        val calAnim by animateFloatAsState(targetValue = caloriesProgress, animationSpec = tween(1200))
+        val hydAnim by animateFloatAsState(targetValue = hydrationProgress, animationSpec = tween(1200))
 
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = 14.dp.toPx()
-            // Calories outer ring
-            drawArc(tokens.border, 0f, 360f, false, style = Stroke(stroke, cap = StrokeCap.Round))
-            drawArc(tokens.energyMark, -90f, 360f * calAnim, false, style = Stroke(stroke, cap = StrokeCap.Round))
+            val stroke = 12.dp.toPx()
+            val inset = stroke * 1.5f
+            
+            // Subtle track backgrounds
+            drawArc(tokens.border.copy(alpha = 0.3f), 0f, 360f, false, style = Stroke(stroke, cap = StrokeCap.Round))
+            drawArc(tokens.border.copy(alpha = 0.3f), 0f, 360f, false, style = Stroke(stroke * 0.7f, cap = StrokeCap.Round), topLeft = Offset(inset, inset), size = Size(size.width - inset * 2, size.height - inset * 2))
 
-            // Hydration inner ring
-            val inset = stroke * 1.3f
-            drawArc(tokens.border, 0f, 360f, false, style = Stroke(stroke * 0.7f, cap = StrokeCap.Round), topLeft = Offset(inset, inset), size = Size(size.width - inset * 2, size.height - inset * 2))
+            // Progress arcs
+            drawArc(tokens.energyMark, -90f, 360f * calAnim, false, style = Stroke(stroke, cap = StrokeCap.Round))
             drawArc(tokens.hydrationMark, -90f, 360f * hydAnim, false, style = Stroke(stroke * 0.7f, cap = StrokeCap.Round), topLeft = Offset(inset, inset), size = Size(size.width - inset * 2, size.height - inset * 2))
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(20.dp))
-            Text(netCalories, style = MaterialTheme.typography.bodyMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-            Text(hydrationText, style = MaterialTheme.typography.bodySmall, color = tokens.hydrationMark)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(24.dp))
+            Text(netCalories, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Black)
+            Text(hydrationText, style = MaterialTheme.typography.labelMedium, color = tokens.hydrationMark, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -442,75 +393,31 @@ fun DualProgressGauge(
 @Composable
 fun MacroPillRow() {
     val tokens = CaloTheme.tokens
-    Row(
+    LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        MacroPill("Protein", "124g", tokens.proteinMark, tokens)
-        MacroPill("Carbs", "210g", tokens.carbsMark, tokens)
-        MacroPill("Fat", "68g", tokens.fatMark, tokens)
+        item { MacroPill("Protein", "124g", tokens.proteinMark, tokens) }
+        item { MacroPill("Carbs", "210g", tokens.carbsMark, tokens) }
+        item { MacroPill("Fat", "68g", tokens.fatMark, tokens) }
     }
 }
 
 @Composable
 fun MacroPill(label: String, value: String, accent: Color, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = tokens.surface,
-        border = BorderStroke(1.dp, tokens.border),
-        modifier = Modifier.width(100.dp)
+    Box(
+        modifier = Modifier
+            .width(100.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(tokens.surface.copy(alpha = 0.6f))
+            .border(1.dp, tokens.border.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            .padding(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(accent)
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(label, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-            Text(value, style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun WeekStrip() {
-    val tokens = CaloTheme.tokens
-    val days = listOf("M" to true, "T" to true, "W" to true, "T" to true, "F" to false, "S" to false, "S" to false)
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = tokens.surface,
-        border = BorderStroke(1.dp, tokens.border),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            days.forEach { (day, active) ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(day, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    Spacer(Modifier.height(6.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = if (active) tokens.energyMark else tokens.border,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (active) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = tokens.onStart, modifier = Modifier.size(16.dp))
-                            }
-                        }
-                    }
-                }
-            }
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(accent))
+            Spacer(Modifier.height(8.dp))
+            Text(value, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted)
         }
     }
 }
@@ -518,7 +425,7 @@ fun WeekStrip() {
 @Composable
 fun MetricMiniStat(label: String, value: String, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+        Text(value, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Black)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted, letterSpacing = 0.5.sp)
     }
 }

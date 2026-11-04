@@ -2,6 +2,7 @@ package com.calovelo.app.presentation.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,10 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.calovelo.app.presentation.theme.CaloTheme
 import com.calovelo.app.presentation.theme.CaloThemeId
 
@@ -37,16 +40,25 @@ fun SettingsScreen(
 ) {
     val tokens = CaloTheme.tokens
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = tokens.background
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        tokens.background,
+                        tokens.surface.copy(alpha = 0.2f),
+                        tokens.background
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             // Header
             Row(
@@ -55,36 +67,33 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("PREFERENCES", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Bold)
-                    Text("Settings", style = MaterialTheme.typography.headlineMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Text("PREFERENCES", style = MaterialTheme.typography.labelSmall, color = tokens.muted, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Settings", style = MaterialTheme.typography.headlineMedium, color = tokens.text, fontWeight = FontWeight.Black, fontSize = 32.sp)
                 }
-                Surface(
-                    shape = CircleShape,
-                    color = tokens.surface,
-                    border = BorderStroke(1.dp, tokens.border),
-                    modifier = Modifier.size(44.dp)
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(tokens.surface.copy(alpha = 0.4f))
+                        .border(1.dp, tokens.border.copy(alpha = 0.3f), CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = tokens.text)
-                    }
+                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = tokens.text, modifier = Modifier.size(28.dp))
                 }
             }
 
-            // Theme Selection Card
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
+            // Theme Selection
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(tokens.surface.copy(alpha = 0.4f))
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                    .padding(24.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Palette, contentDescription = null, tint = tokens.energyMark)
-                        Text("App Theme", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Text("APP THEME", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
 
                     CaloThemeId.entries.forEach { themeId ->
                         val isSelected = themeId == currentThemeId
@@ -93,25 +102,24 @@ fun SettingsScreen(
                             CaloThemeId.EmeraldLight -> Triple("Emerald Light", "Light background with teal green accents", Color(0xFF059669))
                             CaloThemeId.ThermalDark -> Triple("Thermal Dark", "Ultra-dark with thermal orange & violet accents", Color(0xFFFF5733))
                         }
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) (tokens.greenStateContainer ?: tokens.surface) else tokens.background,
-                            border = BorderStroke(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) accentColor else tokens.border
-                            ),
+                        
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(if (isSelected) tokens.greenStateContainer ?: tokens.surface.copy(alpha=0.6f) else Color.Transparent)
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) accentColor else tokens.border.copy(alpha=0.3f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
                                 .clickable { onThemeSelected(themeId) }
+                                .padding(16.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(accentColor))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(label, style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
+                                    Text(label, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
                                     Text(description, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
                                 }
                                 if (isSelected) {
@@ -123,29 +131,30 @@ fun SettingsScreen(
                 }
             }
 
-            // Notifications Card
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
+            // Quick Links & Notifications
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(tokens.surface.copy(alpha = 0.4f))
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                    .padding(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Notifications, contentDescription = null, tint = tokens.hydrationMark)
-                        Text("Notifications", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                    }
+                Column {
+                    SettingsLinkRow(icon = Icons.Default.Person, label = "Edit Profile", tint = tokens.aiMark, tokens = tokens, onClick = onOpenProfile)
+                    HorizontalDivider(color = tokens.border.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 24.dp))
+                    SettingsLinkRow(icon = Icons.Default.Flag, label = "Goals & Targets", tint = tokens.nutritionMark, tokens = tokens, onClick = onOpenGoals)
+                    HorizontalDivider(color = tokens.border.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 24.dp))
+                    
+                    // Notifications Toggle (Inline)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text("Hydration Reminders", style = MaterialTheme.typography.bodyLarge, color = tokens.text)
-                            Text("Nudges between 8 AM and 10 PM when you fall behind pace", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Notifications, contentDescription = null, tint = tokens.hydrationMark, modifier = Modifier.size(24.dp))
+                            Text("Hydration Reminders", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.SemiBold)
                         }
                         Switch(
                             checked = remindersEnabled,
@@ -153,44 +162,15 @@ fun SettingsScreen(
                             colors = SwitchDefaults.colors(checkedTrackColor = tokens.energyMark, checkedThumbColor = tokens.onStart)
                         )
                     }
+
+                    HorizontalDivider(color = tokens.border.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 24.dp))
+                    SettingsLinkRow(icon = Icons.Default.Shield, label = "Privacy Policy", tint = tokens.hydrationMark, tokens = tokens, onClick = onOpenPrivacyPolicy)
+                    HorizontalDivider(color = tokens.border.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 24.dp))
+                    SettingsLinkRow(icon = Icons.AutoMirrored.Filled.Logout, label = "Sign Out", tint = tokens.proteinMark, tokens = tokens, onClick = onSignOut)
                 }
             }
 
-            // Quick Links
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(4.dp)) {
-                    SettingsLinkRow(icon = Icons.Default.Person, label = "Edit Profile", tint = tokens.aiMark, textColor = tokens.text, mutedColor = tokens.muted, onClick = onOpenProfile)
-                    HorizontalDivider(color = tokens.border, modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsLinkRow(icon = Icons.Default.Flag, label = "Goals & Targets", tint = tokens.nutritionMark, textColor = tokens.text, mutedColor = tokens.muted, onClick = onOpenGoals)
-                    HorizontalDivider(color = tokens.border, modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsLinkRow(icon = Icons.Default.Shield, label = "Privacy Policy", tint = tokens.hydrationMark, textColor = tokens.text, mutedColor = tokens.muted, onClick = onOpenPrivacyPolicy)
-                    HorizontalDivider(color = tokens.border, modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsLinkRow(icon = Icons.AutoMirrored.Filled.Logout, label = "Sign Out", tint = tokens.proteinMark, textColor = tokens.text, mutedColor = tokens.muted, onClick = onSignOut)
-                }
-            }
-
-            // App Info
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text("CaloVelo", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                    Text("Version 2.0.0", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                    Text("Fuel your ride. Own your data.", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-                }
-            }
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -200,20 +180,19 @@ private fun SettingsLinkRow(
     icon: ImageVector,
     label: String,
     tint: Color,
-    textColor: Color,
-    mutedColor: Color,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge, color = textColor, modifier = Modifier.weight(1f))
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = mutedColor)
+        Text(label, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted.copy(alpha = 0.5f))
     }
 }

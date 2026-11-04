@@ -1,8 +1,11 @@
 package com.calovelo.app.presentation.insights
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -11,8 +14,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.calovelo.app.presentation.theme.CaloTheme
 
 @Composable
@@ -21,16 +27,25 @@ fun InsightsContent(
 ) {
     val tokens = CaloTheme.tokens
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = tokens.background
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        tokens.background,
+                        tokens.surface.copy(alpha = 0.2f),
+                        tokens.background
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             // Header
             Row(
@@ -39,35 +54,52 @@ fun InsightsContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("NUTRITION & INSIGHTS", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Bold)
-                    Text("7-Day Calorie Analysis", style = MaterialTheme.typography.headlineMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Text(
+                        "NUTRITION & INSIGHTS", 
+                        style = MaterialTheme.typography.labelSmall, 
+                        color = tokens.nutritionMark, 
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "7-Day Analysis", 
+                        style = MaterialTheme.typography.headlineMedium, 
+                        color = tokens.text, 
+                        fontWeight = FontWeight.Black,
+                        fontSize = 32.sp
+                    )
                 }
-                Badge(containerColor = tokens.nutritionStateContainer ?: tokens.surface) {
-                    Text("Avg 2,240 kcal", color = tokens.nutritionMark, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background((tokens.nutritionStateContainer ?: tokens.surface).copy(alpha = 0.5f))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text("Avg 2,240 kcal", color = tokens.nutritionMark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                 }
             }
 
             // 7-Day Chart Card
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(tokens.surface.copy(alpha = 0.4f))
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                    .padding(24.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Calorie Intake vs Target", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                        Text("Target: 2,500 kcal", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                        Text("Intake vs Target", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                        Text("Target: 2,500", style = MaterialTheme.typography.labelMedium, color = tokens.muted)
                     }
 
-                    // Bar Chart Canvas representation
+                    // Bar Chart
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -90,15 +122,20 @@ fun InsightsContent(
                                     modifier = Modifier.fillMaxHeight()
                                 ) {
                                     Spacer(Modifier.weight(1f - heightFraction))
-                                    Surface(
-                                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                                        color = if (valKcal > 2500f) tokens.nutritionMark else tokens.energyMark,
+                                    Box(
                                         modifier = Modifier
-                                            .width(24.dp)
+                                            .width(20.dp)
                                             .fillMaxHeight(heightFraction)
-                                    ) {}
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(day, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                                            .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                                            .background(
+                                                Brush.verticalGradient(
+                                                    colors = if (valKcal > 2500f) listOf(tokens.nutritionMark, tokens.nutritionMark.copy(alpha = 0.5f))
+                                                             else listOf(tokens.energyMark, tokens.energyMark.copy(alpha = 0.5f))
+                                                )
+                                            )
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(day, style = MaterialTheme.typography.labelSmall, color = tokens.muted)
                                 }
                             }
                         }
@@ -107,25 +144,28 @@ fun InsightsContent(
             }
 
             // Recent Meal Journal List
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("RECENT MEAL JOURNAL", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(tokens.surface.copy(alpha = 0.4f))
+                        .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+                        .padding(20.dp)
                 ) {
-                    Text("Recent Meal Journal", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-
-                    MealJournalItem("Breakfast", "Oatmeal with Berries & Whey", "450 kcal · P: 32g · C: 55g · F: 8g", tokens)
-                    HorizontalDivider(color = tokens.border)
-                    MealJournalItem("Lunch", "Paneer Roti Bowl with Dal", "680 kcal · P: 42g · C: 72g · F: 22g", tokens)
-                    HorizontalDivider(color = tokens.border)
-                    MealJournalItem("Dinner", "Grilled Salmon & Quinoa", "720 kcal · P: 48g · C: 44g · F: 24g", tokens)
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        MealJournalItem("Breakfast", "Oatmeal with Berries & Whey", "450 kcal · P: 32g · C: 55g · F: 8g", tokens)
+                        HorizontalDivider(color = tokens.border.copy(alpha = 0.3f))
+                        MealJournalItem("Lunch", "Paneer Roti Bowl with Dal", "680 kcal · P: 42g · C: 72g · F: 22g", tokens)
+                        HorizontalDivider(color = tokens.border.copy(alpha = 0.3f))
+                        MealJournalItem("Dinner", "Grilled Salmon & Quinoa", "720 kcal · P: 48g · C: 44g · F: 24g", tokens)
+                    }
                 }
             }
+            
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -137,11 +177,22 @@ fun MealJournalItem(mealType: String, title: String, macros: String, tokens: com
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(mealType, style = MaterialTheme.typography.labelSmall, color = tokens.nutritionMark, fontWeight = FontWeight.Bold)
-            Text(title, style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.SemiBold)
-            Text(macros, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(tokens.nutritionMark.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Restaurant, contentDescription = null, tint = tokens.nutritionMark, modifier = Modifier.size(24.dp))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(mealType, style = MaterialTheme.typography.labelSmall, color = tokens.nutritionMark, fontWeight = FontWeight.Bold)
+                Text(title, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                Text(macros, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+            }
         }
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted)
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted.copy(alpha = 0.5f))
     }
 }
