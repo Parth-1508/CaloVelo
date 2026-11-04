@@ -107,6 +107,9 @@ dependencies {
     // Guava (Required for CameraX ListenableFuture)
     implementation("com.google.guava:guava:32.1.3-android")
 
+    // Lottie for 3D animated Exercise Guides
+    implementation("com.airbnb.android:lottie-compose:6.4.1")
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
