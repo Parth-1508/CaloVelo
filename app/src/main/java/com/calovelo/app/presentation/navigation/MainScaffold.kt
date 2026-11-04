@@ -27,6 +27,7 @@ import com.calovelo.app.presentation.theme.CaloTheme
 import com.calovelo.app.presentation.theme.CaloThemeId
 import com.calovelo.app.presentation.training.TrainingContent
 import com.calovelo.app.presentation.workout.WorkoutContent
+import com.calovelo.app.presentation.gym.GymTrackerContent
 
 enum class BottomTab(
     val route: String,
@@ -138,7 +139,7 @@ fun MainScaffold(
                 ScannerContent()
             }
             composable(BottomTab.Training.route) {
-                TrainingContent()
+                GymTrackerContent()
             }
             composable(BottomTab.Insights.route) {
                 InsightsContent()
