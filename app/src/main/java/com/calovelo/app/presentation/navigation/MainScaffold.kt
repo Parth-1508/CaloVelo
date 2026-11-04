@@ -120,6 +120,10 @@ fun MainScaffold(
             // ── Bottom tabs ─────────────────────────
             composable(BottomTab.Home.route) {
                 HomeContent(
+                    userName = userName,
+                    dailyCalorieGoal = dailyCalorieGoal,
+                    dailyWaterGoalMl = dailyWaterGoalMl,
+                    waterIntakeMl = waterIntakeMl,
                     onStartWorkout = onStartWorkout,
                     onOpenScanner = {
                         navController.navigate(BottomTab.Scanner.route) {

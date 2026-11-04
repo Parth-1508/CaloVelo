@@ -32,11 +32,23 @@ import com.calovelo.app.presentation.theme.CaloThemeId
 @Composable
 fun HomeContent(
     modifier: Modifier = Modifier,
+    userName: String = "Athlete",
+    dailyCalorieGoal: Int = 2500,
+    dailyWaterGoalMl: Int = 3000,
+    waterIntakeMl: Int = 0,
     onStartWorkout: () -> Unit = {},
     onOpenScanner: () -> Unit = {}
 ) {
     val tokens = CaloTheme.tokens
     val scrollState = rememberScrollState()
+
+    // Assuming we have dummy values for now until fully wired
+    val consumedKcal = 1450
+    val burnedKcal = 650
+    val netKcal = consumedKcal - burnedKcal
+    
+    val caloriesProgress = if (dailyCalorieGoal > 0) (consumedKcal.toFloat() / dailyCalorieGoal).coerceIn(0f, 1f) else 0f
+    val hydrationProgress = if (dailyWaterGoalMl > 0) (waterIntakeMl.toFloat() / dailyWaterGoalMl).coerceIn(0f, 1f) else 0f
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -63,7 +75,7 @@ fun HomeContent(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Hello, Athlete",
+                        text = "Hello, $userName",
                         style = MaterialTheme.typography.headlineMedium,
                         color = tokens.text,
                         fontWeight = FontWeight.Bold
@@ -88,7 +100,14 @@ fun HomeContent(
             if (tokens.themeId == CaloThemeId.ThermalDark) {
                 ThermalHomeVariant(onStartWorkout = onStartWorkout, onOpenScanner = onOpenScanner)
             } else {
-                EmeraldHomeVariant(onStartWorkout = onStartWorkout, onOpenScanner = onOpenScanner)
+                EmeraldHomeVariant(
+                    caloriesProgress = caloriesProgress,
+                    netCalories = "$netKcal / $dailyCalorieGoal kcal",
+                    hydrationProgress = hydrationProgress,
+                    hydrationText = "${waterIntakeMl / 1000f} / ${dailyWaterGoalMl / 1000f} L",
+                    onStartWorkout = onStartWorkout, 
+                    onOpenScanner = onOpenScanner
+                )
             }
         }
     }
@@ -96,6 +115,10 @@ fun HomeContent(
 
 @Composable
 fun EmeraldHomeVariant(
+    caloriesProgress: Float,
+    netCalories: String,
+    hydrationProgress: Float,
+    hydrationText: String,
     onStartWorkout: () -> Unit,
     onOpenScanner: () -> Unit
 ) {
@@ -135,10 +158,10 @@ fun EmeraldHomeVariant(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     DualProgressGauge(
-                        caloriesProgress = 0.74f,
-                        netCalories = "1,850 / 2,500 kcal",
-                        hydrationProgress = 0.85f,
-                        hydrationText = "2.55 / 3.0 L"
+                        caloriesProgress = caloriesProgress,
+                        netCalories = netCalories,
+                        hydrationProgress = hydrationProgress,
+                        hydrationText = hydrationText
                     )
                 }
 
