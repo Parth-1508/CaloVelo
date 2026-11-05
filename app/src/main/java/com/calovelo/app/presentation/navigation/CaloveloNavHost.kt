@@ -47,7 +47,7 @@ fun CaloveloNavHost(
                     onRemindersToggled = mainViewModel::setReminders,
                     onSaveProfile = mainViewModel::saveProfile,
                     onSaveGoals = mainViewModel::saveGoals,
-                    onQuickAddWater = { /* TODO: wire to hydration repo */ },
+                    onQuickAddWater = mainViewModel::quickAddWater,
                     onStartWorkout = {
                         navController.navigate(Routes.TRACKING) { launchSingleTop = true }
                     },

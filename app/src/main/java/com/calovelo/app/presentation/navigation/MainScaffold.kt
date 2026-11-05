@@ -126,6 +126,10 @@ fun MainScaffold(
                     dailyWaterGoalMl = dailyWaterGoalMl,
                     waterIntakeMl = waterIntakeMl,
                     onStartWorkout = onStartWorkout,
+                    onQuickAddWater = onQuickAddWater,
+                    onOpenHydration = {
+                        navController.navigate("hydration") { launchSingleTop = true }
+                    },
                     onOpenScanner = {
                         navController.navigate(BottomTab.Scanner.route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -189,7 +193,8 @@ fun MainScaffold(
                 HydrationContent(
                     intakeMl = waterIntakeMl,
                     goalMl = dailyWaterGoalMl,
-                    onQuickAdd = onQuickAddWater
+                    onQuickAdd = onQuickAddWater,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
             composable("crew") {

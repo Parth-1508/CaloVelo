@@ -3,6 +3,7 @@ package com.calovelo.app.presentation.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.calovelo.app.domain.repository.SettingsRepository
+import com.calovelo.app.domain.usecase.LogWaterUseCase
 import com.calovelo.app.presentation.theme.CaloThemeId
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,7 +27,8 @@ data class MainUiState(
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val logWaterUseCase: LogWaterUseCase
 ) : ViewModel() {
 
     val uiState: StateFlow<MainUiState> = combine(
@@ -83,6 +85,12 @@ class MainViewModel @Inject constructor(
             settingsRepository.setDailyCalorieGoal(calories)
             settingsRepository.setDailyWaterGoalMl(waterMl)
             settingsRepository.setWeeklyDistanceGoalKm(distanceKm)
+        }
+    }
+
+    fun quickAddWater(amountMl: Int) {
+        viewModelScope.launch {
+            logWaterUseCase(amountMl)
         }
     }
 }

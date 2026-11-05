@@ -2,13 +2,11 @@ package com.calovelo.app.presentation.home
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,18 +38,15 @@ fun HomeContent(
     dailyWaterGoalMl: Int = 3000,
     waterIntakeMl: Int = 0,
     onStartWorkout: () -> Unit = {},
-    onOpenScanner: () -> Unit = {}
+    onOpenScanner: () -> Unit = {},
+    onQuickAddWater: (Int) -> Unit = {},
+    onOpenHydration: () -> Unit = {}
 ) {
     val tokens = CaloTheme.tokens
     val scrollState = rememberScrollState()
 
-    // Assuming we have dummy values for now until fully wired
-    val consumedKcal = 1450
-    val burnedKcal = 650
-    val netKcal = consumedKcal - burnedKcal
-    
-    val caloriesProgress = if (dailyCalorieGoal > 0) (consumedKcal.toFloat() / dailyCalorieGoal).coerceIn(0f, 1f) else 0f
     val hydrationProgress = if (dailyWaterGoalMl > 0) (waterIntakeMl.toFloat() / dailyWaterGoalMl).coerceIn(0f, 1f) else 0f
+    val hydrationPercent = if (dailyWaterGoalMl > 0) (waterIntakeMl * 100 / dailyWaterGoalMl) else 0
 
     Box(
         modifier = modifier
@@ -60,7 +55,7 @@ fun HomeContent(
                 Brush.verticalGradient(
                     colors = listOf(
                         tokens.background,
-                        tokens.surface.copy(alpha = 0.2f),
+                        tokens.surface.copy(alpha = 0.15f),
                         tokens.background
                     )
                 )
@@ -70,10 +65,10 @@ fun HomeContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp)
+                .padding(horizontal = 20.dp, vertical = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Premium Glassmorphic Header
+            // ── Header ──────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,7 +76,7 @@ fun HomeContent(
             ) {
                 Column {
                     Text(
-                        text = "TODAY's OVERVIEW",
+                        text = "TODAY'S OVERVIEW",
                         style = MaterialTheme.typography.labelSmall,
                         color = tokens.energyMark,
                         fontWeight = FontWeight.Black,
@@ -92,172 +87,282 @@ fun HomeContent(
                         text = "Hello, $userName",
                         style = MaterialTheme.typography.headlineMedium,
                         color = tokens.text,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 32.sp
+                        fontWeight = FontWeight.Black
                     )
                 }
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(52.dp)
                         .clip(CircleShape)
                         .background(tokens.surface.copy(alpha = 0.6f))
-                        .border(1.dp, tokens.border.copy(alpha = 0.5f), CircleShape),
+                        .border(1.dp, tokens.border.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = "Profile", tint = tokens.text, modifier = Modifier.size(28.dp))
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = tokens.text,
+                        modifier = Modifier.size(26.dp)
+                    )
                 }
             }
 
+            // ── Quick Actions Row ───────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickActionPill(
+                    icon = Icons.Default.DirectionsRun,
+                    text = "Run",
+                    color = tokens.startFill,
+                    textColor = tokens.onStart,
+                    onClick = onStartWorkout,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionPill(
+                    icon = Icons.Default.CameraAlt,
+                    text = "Scan",
+                    color = tokens.surface,
+                    textColor = tokens.text,
+                    borderColor = tokens.border.copy(alpha = 0.4f),
+                    onClick = onOpenScanner,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionPill(
+                    icon = Icons.Default.FitnessCenter,
+                    text = "Lift",
+                    color = tokens.surface,
+                    textColor = tokens.text,
+                    borderColor = tokens.border.copy(alpha = 0.4f),
+                    onClick = onStartWorkout,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // ── Hydration Card ──────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(tokens.surface.copy(alpha = tokens.surfaceAlpha))
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
+                    .clickable { onOpenHydration() }
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Mini water gauge
+                    Box(modifier = Modifier.size(72.dp), contentAlignment = Alignment.Center) {
+                        val hydAnim by animateFloatAsState(
+                            targetValue = hydrationProgress,
+                            animationSpec = tween(1000),
+                            label = "hydration"
+                        )
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val sw = 6.dp.toPx()
+                            drawArc(
+                                tokens.border.copy(alpha = 0.3f),
+                                0f, 360f, false,
+                                style = Stroke(sw, cap = StrokeCap.Round)
+                            )
+                            drawArc(
+                                tokens.hydrationMark,
+                                -90f, 360f * hydAnim, false,
+                                style = Stroke(sw, cap = StrokeCap.Round)
+                            )
+                        }
+                        Icon(
+                            Icons.Default.WaterDrop,
+                            contentDescription = null,
+                            tint = tokens.hydrationMark,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Hydration",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = tokens.text,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "${waterIntakeMl}ml / ${dailyWaterGoalMl}ml · $hydrationPercent%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = tokens.muted
+                        )
+                    }
+
+                    // Quick +250ml button
+                    FilledTonalButton(
+                        onClick = { onQuickAddWater(250) },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = tokens.waterContainer,
+                            contentColor = tokens.waterInk
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("250ml", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // ── Theme-specific dashboard ────────────
             if (tokens.themeId == CaloThemeId.ThermalDark) {
                 ThermalHomeVariant(onStartWorkout = onStartWorkout, onOpenScanner = onOpenScanner)
             } else {
                 EmeraldHomeVariant(
-                    caloriesProgress = caloriesProgress,
-                    netCalories = "$netKcal / $dailyCalorieGoal kcal",
-                    hydrationProgress = hydrationProgress,
-                    hydrationText = "${waterIntakeMl / 1000f} / ${dailyWaterGoalMl / 1000f} L",
-                    onStartWorkout = onStartWorkout, 
+                    dailyCalorieGoal = dailyCalorieGoal,
+                    onStartWorkout = onStartWorkout,
                     onOpenScanner = onOpenScanner
                 )
             }
-            
-            Spacer(Modifier.height(80.dp)) // padding for bottom nav
+
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
 
 @Composable
 fun EmeraldHomeVariant(
-    caloriesProgress: Float,
-    netCalories: String,
-    hydrationProgress: Float,
-    hydrationText: String,
+    dailyCalorieGoal: Int,
     onStartWorkout: () -> Unit,
     onOpenScanner: () -> Unit
 ) {
     val tokens = CaloTheme.tokens
 
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        // Flat, elegant dashboard card instead of giant glass bubble
+        // Energy overview card
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = tokens.surface,
+            shape = RoundedCornerShape(28.dp),
+            color = tokens.surface.copy(alpha = tokens.surfaceAlpha),
+            border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.3f)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Today's Energy", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Today's Energy",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = tokens.text,
+                        fontWeight = FontWeight.Bold
+                    )
                     Box(
                         modifier = Modifier
-                            .background((tokens.greenStateContainer ?: tokens.surface.copy(alpha = 0.5f)), RoundedCornerShape(12.dp))
+                            .background(
+                                (tokens.greenStateContainer
+                                    ?: tokens.surface.copy(alpha = 0.5f)),
+                                RoundedCornerShape(12.dp)
+                            )
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text("Active", color = tokens.energyMark, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Goal: $dailyCalorieGoal",
+                            color = tokens.energyMark,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
 
-                // Tight layout: Gauge on left, macros stacked on right
+                // Summary message
+                Text(
+                    "Log meals from the Scan tab and check Insights for a full macro breakdown.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = tokens.muted
+                )
+
+                // Macro legend
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    DualProgressGauge(
-                        caloriesProgress = caloriesProgress,
-                        netCalories = netCalories,
-                        hydrationProgress = hydrationProgress,
-                        hydrationText = hydrationText
-                    )
-                    
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        MiniMacroBar("Protein", "124g", tokens.proteinMark, tokens)
-                        MiniMacroBar("Carbs", "210g", tokens.carbsMark, tokens)
-                        MiniMacroBar("Fat", "68g", tokens.fatMark, tokens)
-                    }
+                    MacroLegendDot("Protein", tokens.proteinMark, tokens)
+                    MacroLegendDot("Carbs", tokens.carbsMark, tokens)
+                    MacroLegendDot("Fat", tokens.fatMark, tokens)
                 }
             }
         }
 
-        // Quick Actions (Compact, unified row)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            QuickActionPill(
-                icon = Icons.Default.DirectionsRun,
-                text = "Run",
-                color = tokens.startFill,
-                textColor = tokens.onStart,
-                onClick = onStartWorkout,
-                modifier = Modifier.weight(1f)
+        // Recent Activity
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(
+                "RECENT ACTIVITY",
+                style = MaterialTheme.typography.labelSmall,
+                color = tokens.muted,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
             )
-            QuickActionPill(
-                icon = Icons.Default.Restaurant,
-                text = "Scan",
-                color = tokens.surface,
-                textColor = tokens.text,
-                onClick = onOpenScanner,
-                modifier = Modifier.weight(1f)
-            )
-            QuickActionPill(
-                icon = Icons.Default.WaterDrop,
-                text = "Water",
-                color = tokens.surface,
-                textColor = tokens.text,
-                onClick = {}, // TODO wire
-                modifier = Modifier.weight(1f)
-            )
-        }
 
-        // Recent Activity 
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("RECENT ACTIVITY", style = MaterialTheme.typography.labelSmall, color = tokens.muted, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onStartWorkout)
+                shape = RoundedCornerShape(24.dp),
+                color = tokens.surface.copy(alpha = tokens.surfaceAlpha),
+                border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.3f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onStartWorkout)
             ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .background(tokens.energyMark.copy(alpha = 0.15f), CircleShape),
+                                    .background(
+                                        tokens.energyMark.copy(alpha = 0.12f),
+                                        CircleShape
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.DirectionsRun, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(20.dp))
+                                Icon(
+                                    Icons.Default.DirectionsRun,
+                                    contentDescription = null,
+                                    tint = tokens.energyMark,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                             Column {
-                                Text("Morning Tempo Run", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                                Text("Today, 7:30 AM", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                                Text(
+                                    "Start a new workout",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = tokens.text,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "GPS run, ride or gym session",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = tokens.muted
+                                )
                             }
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        MetricMiniStat("Distance", "8.42 km", tokens)
-                        MetricMiniStat("Duration", "42:15", tokens)
-                        MetricMiniStat("Pace", "5:01 /km", tokens)
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = tokens.muted
+                        )
                     }
                 }
             }
@@ -273,75 +378,71 @@ fun ThermalHomeVariant(
     val tokens = CaloTheme.tokens
 
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        // Hero Concentric Engine
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .background(tokens.surface.copy(alpha = 0.6f))
-                .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text(
-                    "DAILY THERMAL LOAD",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = tokens.energyMark,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
-                )
-
-                Box(
-                    modifier = Modifier.size(240.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val progressAnim by animateFloatAsState(targetValue = 0.88f, animationSpec = tween(1200))
-                    val stepsAnim by animateFloatAsState(targetValue = 0.65f, animationSpec = tween(1200))
-
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val strokeWidth = 18.dp.toPx()
-                        drawArc(tokens.border, 0f, 360f, false, style = Stroke(strokeWidth, cap = StrokeCap.Round))
-                        drawArc(
-                            brush = Brush.sweepGradient(listOf(tokens.energyMark, tokens.nutritionMark)),
-                            startAngle = -90f, sweepAngle = 360f * progressAnim, useCenter = false,
-                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
-                        )
-                        drawArc(tokens.border, 0f, 360f, false, style = Stroke(strokeWidth * 0.7f, cap = StrokeCap.Round), topLeft = Offset(strokeWidth * 0.8f, strokeWidth * 0.8f), size = Size(size.width - strokeWidth * 1.6f, size.height - strokeWidth * 1.6f))
-                        drawArc(
-                            color = tokens.hydrationMark, startAngle = -90f, sweepAngle = 360f * stepsAnim, useCenter = false,
-                            style = Stroke(strokeWidth * 0.7f, cap = StrokeCap.Round), topLeft = Offset(strokeWidth * 0.8f, strokeWidth * 0.8f), size = Size(size.width - strokeWidth * 1.6f, size.height - strokeWidth * 1.6f)
-                        )
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("2,480", style = MaterialTheme.typography.displaySmall, color = tokens.text, fontWeight = FontWeight.Black)
-                        Text("Kcal Burned", style = MaterialTheme.typography.labelMedium, color = tokens.muted, letterSpacing = 1.sp)
-                    }
-                }
-            }
-        }
-
         // Glassmorphic Action Blocks
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            GlassCard(modifier = Modifier.weight(1f).clickable { onOpenScanner() }, tokens) {
-                Icon(Icons.Default.RestaurantMenu, contentDescription = null, tint = tokens.nutritionMark, modifier = Modifier.size(32.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            GlassCard(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onOpenScanner() },
+                tokens = tokens
+            ) {
+                Icon(
+                    Icons.Default.RestaurantMenu,
+                    contentDescription = null,
+                    tint = tokens.nutritionMark,
+                    modifier = Modifier.size(28.dp)
+                )
                 Spacer(Modifier.height(12.dp))
-                Text("Scan Meal", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                Text("Analyze macros", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                Text(
+                    "Scan Meal",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = tokens.text,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "AI macro analysis",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = tokens.muted
+                )
             }
-            GlassCard(modifier = Modifier.weight(1f).clickable { onStartWorkout() }, tokens) {
-                Icon(Icons.Default.FlashOn, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(32.dp))
+            GlassCard(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onStartWorkout() },
+                tokens = tokens
+            ) {
+                Icon(
+                    Icons.Default.FlashOn,
+                    contentDescription = null,
+                    tint = tokens.energyMark,
+                    modifier = Modifier.size(28.dp)
+                )
                 Spacer(Modifier.height(12.dp))
-                Text("Train", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
-                Text("Start activity", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                Text(
+                    "Train",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = tokens.text,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Start activity",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = tokens.muted
+                )
             }
         }
     }
 }
 
 @Composable
-fun GlassCard(modifier: Modifier = Modifier, tokens: com.calovelo.app.presentation.theme.CaloTokens, content: @Composable ColumnScope.() -> Unit) {
+fun GlassCard(
+    modifier: Modifier = Modifier,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(24.dp))
@@ -354,79 +455,54 @@ fun GlassCard(modifier: Modifier = Modifier, tokens: com.calovelo.app.presentati
 }
 
 @Composable
-fun QuickActionPill(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, color: Color, textColor: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun QuickActionPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    color: Color,
+    textColor: Color,
+    borderColor: Color = Color.Transparent,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(color)
+            .then(
+                if (borderColor != Color.Transparent)
+                    Modifier.border(1.dp, borderColor, RoundedCornerShape(20.dp))
+                else Modifier
+            )
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(20.dp))
-            Text(text, color = textColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(18.dp))
+            Text(text, color = textColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
     }
 }
 
 @Composable
-fun DualProgressGauge(
-    caloriesProgress: Float,
-    netCalories: String,
-    hydrationProgress: Float,
-    hydrationText: String
+private fun MacroLegendDot(
+    label: String,
+    accent: Color,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens
 ) {
-    val tokens = CaloTheme.tokens
-    Box(
-        modifier = Modifier.size(200.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        val calAnim by animateFloatAsState(targetValue = caloriesProgress, animationSpec = tween(1200))
-        val hydAnim by animateFloatAsState(targetValue = hydrationProgress, animationSpec = tween(1200))
-
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = 12.dp.toPx()
-            val inset = stroke * 1.5f
-            
-            // Subtle track backgrounds
-            drawArc(tokens.border.copy(alpha = 0.3f), 0f, 360f, false, style = Stroke(stroke, cap = StrokeCap.Round))
-            drawArc(tokens.border.copy(alpha = 0.3f), 0f, 360f, false, style = Stroke(stroke * 0.7f, cap = StrokeCap.Round), topLeft = Offset(inset, inset), size = Size(size.width - inset * 2, size.height - inset * 2))
-
-            // Progress arcs
-            drawArc(tokens.energyMark, -90f, 360f * calAnim, false, style = Stroke(stroke, cap = StrokeCap.Round))
-            drawArc(tokens.hydrationMark, -90f, 360f * hydAnim, false, style = Stroke(stroke * 0.7f, cap = StrokeCap.Round), topLeft = Offset(inset, inset), size = Size(size.width - inset * 2, size.height - inset * 2))
-        }
-
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = tokens.energyMark, modifier = Modifier.size(24.dp))
-            Text(netCalories, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Black)
-            Text(hydrationText, style = MaterialTheme.typography.labelMedium, color = tokens.hydrationMark, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-// Removed unused MacroPillRow
-
-@Composable
-fun MiniMacroBar(label: String, value: String, accent: Color, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(accent))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted)
-        }
-        Text(value, style = MaterialTheme.typography.titleSmall, color = tokens.text, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun MetricMiniStat(label: String, value: String, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Black)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted, letterSpacing = 0.5.sp)
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(accent)
+        )
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted)
     }
 }
