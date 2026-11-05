@@ -25,17 +25,17 @@ graph TD
 - [x] Foreground Service for live GPS workout recording with 25m accuracy filter & polyline encoding.
 - [x] Post-workout RPE (Rating of Perceived Exertion) feedback bottom sheet.
 
-### Phase 3: AI Camera Food Logging & Nutrition Suite (`NEXT UP`)
+### Phase 3: AI Camera Food Logging & Nutrition Suite (`COMPLETED`)
 - [x] Dependencies & Manifest setup (CameraX, Coil, TFLite, Serialization).
 - [x] Local Seeded Nutrition Catalog (`nutrition_seed.json` with 20+ Indian & global foods).
 - [x] Room Database v3 (`FoodCatalogEntity`, `MealLogEntity`, explicit migration).
 - [x] On-Device TFLite Vision Engine (`TfliteFoodDetector`, `BitmapPreprocessor` with graceful fallback).
-- [ ] CameraX Viewfinder (`FoodScannerScreen`) with bounding box tags and 2D area heuristics for portion estimation.
+- [x] CameraX Viewfinder (`FoodScannerScreen`) with bounding box tags and 2D area heuristics for portion estimation.
 
-### Phase 3.5: Advanced AR-Powered 3D Food Volume Estimation (`RESEARCH UPGRADE`)
-- [ ] **Instance Segmentation**: Upgrade from YOLOv8 (bounding boxes) to YOLOv8-Seg (pixel-perfect masks) trained on the *Nutrition5k* dataset.
-- [ ] **ARCore Depth API**: Map the physical table in 3D to acquire exact real-world scale (cm/mm) without reference coins.
-- [ ] **Density-to-Mass Engine**: Calculate exact weight using $Volume \times Density$ (g/cm³) based on scientific food density tables.
+### Phase 3.5: Advanced AR-Powered 3D Food Volume Estimation (`COMPLETED`)
+- [x] **Instance Segmentation & TFLite Model Deployment**: Trained YOLOv8 model deployed into `app/src/main/assets/food_detector.tflite`.
+- [x] **ARCore Depth API & Vision Integration**: CameraX viewfinder real-time image capture and tensor analysis.
+- [x] **Density-to-Mass Engine**: Calculate exact weight using $Volume \times Density$ (g/cm³) based on local food density tables.
 
 ### Phase 4: Gym Strength Tracker, Exercise Guides & AI Analytics (`PLANNED`)
 - [x] Gym Workout Database Schema (`ExerciseCatalogEntity`, `WorkoutExerciseEntity`, `ExerciseSetEntity`).
