@@ -72,6 +72,8 @@ data class GymTrackerUiState(
     val isSearching: Boolean = false,
     /** Finished sessions, newest first. */
     val history: List<GymHistoryItemUi> = emptyList(),
+    /** Selected exercise for 3D guide preview sheet. */
+    val guideExercise: com.calovelo.app.domain.model.Exercise? = null,
     /** True while a start / finish / discard call is in flight; disable those buttons meanwhile. */
     val isBusy: Boolean = false,
     val userMessage: String? = null

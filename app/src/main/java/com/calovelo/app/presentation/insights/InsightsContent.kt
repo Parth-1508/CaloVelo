@@ -34,6 +34,7 @@ import com.calovelo.app.presentation.theme.CaloTheme
 @Composable
 fun InsightsContent(
     modifier: Modifier = Modifier,
+    onNavigateToScanner: () -> Unit = {},
     viewModel: NutritionViewModel = hiltViewModel()
 ) {
     val tokens = CaloTheme.tokens
@@ -289,13 +290,32 @@ fun InsightsContent(
 
                 // ── Logged Meals Journal ────────────────────
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        "TODAY'S MEAL JOURNAL",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = tokens.muted,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "TODAY'S MEAL JOURNAL",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = tokens.muted,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+                        FilledTonalButton(
+                            onClick = onNavigateToScanner,
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = tokens.nutritionMark.copy(alpha = 0.15f),
+                                contentColor = tokens.nutritionMark
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Log Food", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
+                    }
 
                     val nonEmpty = state.loggedSections.filter { it.rows.isNotEmpty() }
                     if (nonEmpty.isEmpty()) {
@@ -307,24 +327,33 @@ fun InsightsContent(
                                 .padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 Icon(
                                     Icons.Default.Restaurant,
                                     contentDescription = null,
                                     tint = tokens.muted.copy(alpha = 0.5f),
                                     modifier = Modifier.size(40.dp)
                                 )
-                                Spacer(Modifier.height(12.dp))
                                 Text(
-                                    "No meals logged yet",
+                                    "No meals logged yet today",
                                     color = tokens.muted,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
-                                Text(
-                                    "Use the Scanner tab to snap a meal",
-                                    color = tokens.muted.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                Button(
+                                    onClick = onNavigateToScanner,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = tokens.nutritionMark,
+                                        contentColor = Color.White
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Search & Log Food", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     } else {

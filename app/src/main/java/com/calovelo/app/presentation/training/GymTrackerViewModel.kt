@@ -65,6 +65,7 @@ class GymTrackerViewModel @Inject constructor(
     private val isBusy = MutableStateFlow(false)
     private val userMessage = MutableStateFlow<String?>(null)
     private val isSearching = MutableStateFlow(false)
+    private val guideExercise = MutableStateFlow<Exercise?>(null)
 
     /**
      * Exercises the user added to the active session, in the order added. An exercise has no row in
@@ -130,7 +131,7 @@ class GymTrackerViewModel @Inject constructor(
         searchResults,
         historyItems,
         combine(searchQuery, muscleFilter, isSearching) { q, g, s -> Triple(q, g, s) },
-        combine(isBusy, userMessage) { busy, message -> busy to message }
+        combine(isBusy, userMessage, guideExercise) { busy, message, guide -> Triple(busy, message, guide) }
     ) { session, results, history, search, transient ->
         val inSession = session.exercises.mapTo(HashSet()) { it.exerciseId }
         GymTrackerUiState(
@@ -146,6 +147,7 @@ class GymTrackerViewModel @Inject constructor(
             searchResults = results.map { it.toResultUi(isInSession = it.id in inSession) },
             isSearching = search.third,
             history = history,
+            guideExercise = transient.third,
             isBusy = transient.first,
             userMessage = transient.second
         )
@@ -235,6 +237,40 @@ class GymTrackerViewModel @Inject constructor(
         val sessionId = state.session?.sessionId ?: return
         if (state.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets?.isNotEmpty() == true) return
         savePending(sessionId, currentPendingIds(sessionId) - exerciseId)
+    }
+
+    /** Deletes an exercise and all its logged sets from the active workout session. */
+    fun onDeleteExercise(exerciseId: String) {
+        val state = uiState.value
+        val sessionId = state.session?.sessionId ?: return
+        viewModelScope.launch {
+            try {
+                val ex = state.exercises.firstOrNull { it.exerciseId == exerciseId }
+                ex?.sets?.forEach { set ->
+                    deleteSet(set.setId)
+                }
+                savePending(sessionId, currentPendingIds(sessionId) - exerciseId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                userMessage.value = "Couldn't delete exercise."
+            }
+        }
+    }
+
+    fun onOpenGuide(exerciseId: String) {
+        viewModelScope.launch {
+            try {
+                val exercise = getExercisesByIds(listOf(exerciseId))[exerciseId]
+                guideExercise.value = exercise
+            } catch (e: Exception) {
+                userMessage.value = "Couldn't load guide."
+            }
+        }
+    }
+
+    fun onCloseGuide() {
+        guideExercise.value = null
     }
 
     // ---- Sets ----------------------------------------------------------------------------------

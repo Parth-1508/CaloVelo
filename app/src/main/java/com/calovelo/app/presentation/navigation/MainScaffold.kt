@@ -126,17 +126,36 @@ fun MainScaffold(
                     dailyWaterGoalMl = dailyWaterGoalMl,
                     waterIntakeMl = waterIntakeMl,
                     onStartWorkout = onStartWorkout,
-                    onQuickAddWater = onQuickAddWater,
-                    onOpenHydration = {
-                        navController.navigate("hydration") { launchSingleTop = true }
-                    },
                     onOpenScanner = {
                         navController.navigate(BottomTab.Scanner.route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    onOpenTraining = {
+                        navController.navigate(BottomTab.Training.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onOpenHydration = {
+                        navController.navigate("hydration") { launchSingleTop = true }
+                    },
+                    onOpenHistory = {
+                        navController.navigate("history") { launchSingleTop = true }
+                    },
+                    onOpenCrew = {
+                        navController.navigate("crew") { launchSingleTop = true }
+                    },
+                    onOpenProfile = {
+                        navController.navigate("profile") { launchSingleTop = true }
+                    },
+                    onOpenGoals = {
+                        navController.navigate("goals") { launchSingleTop = true }
+                    },
+                    onQuickAddWater = onQuickAddWater
                 )
             }
             composable(BottomTab.Scanner.route) {
@@ -146,7 +165,15 @@ fun MainScaffold(
                 GymTrackerContent()
             }
             composable(BottomTab.Insights.route) {
-                InsightsContent()
+                InsightsContent(
+                    onNavigateToScanner = {
+                        navController.navigate(BottomTab.Scanner.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
             }
             composable(BottomTab.Settings.route) {
                 SettingsScreen(
@@ -187,7 +214,7 @@ fun MainScaffold(
                 )
             }
             composable("history") {
-                HistoryContent()
+                HistoryContent(onNavigateBack = { navController.popBackStack() })
             }
             composable("hydration") {
                 HydrationContent(
@@ -198,10 +225,19 @@ fun MainScaffold(
                 )
             }
             composable("crew") {
-                CrewContent()
+                CrewContent(onNavigateBack = { navController.popBackStack() })
             }
             composable("workout") {
-                WorkoutContent(onStartWorkout = onStartWorkout)
+                WorkoutContent(
+                    onStartWorkout = onStartWorkout,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable("training_program") {
+                TrainingContent(
+                    onStartWorkout = onStartWorkout,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }

@@ -18,8 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -39,8 +37,13 @@ fun HomeContent(
     waterIntakeMl: Int = 0,
     onStartWorkout: () -> Unit = {},
     onOpenScanner: () -> Unit = {},
-    onQuickAddWater: (Int) -> Unit = {},
-    onOpenHydration: () -> Unit = {}
+    onOpenTraining: () -> Unit = {},
+    onOpenHydration: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
+    onOpenCrew: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onOpenGoals: () -> Unit = {},
+    onQuickAddWater: (Int) -> Unit = {}
 ) {
     val tokens = CaloTheme.tokens
     val scrollState = rememberScrollState()
@@ -95,7 +98,8 @@ fun HomeContent(
                         .size(52.dp)
                         .clip(CircleShape)
                         .background(tokens.surface.copy(alpha = 0.6f))
-                        .border(1.dp, tokens.border.copy(alpha = 0.4f), CircleShape),
+                        .border(1.dp, tokens.border.copy(alpha = 0.4f), CircleShape)
+                        .clickable(onClick = onOpenProfile),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -135,7 +139,7 @@ fun HomeContent(
                     color = tokens.surface,
                     textColor = tokens.text,
                     borderColor = tokens.border.copy(alpha = 0.4f),
-                    onClick = onStartWorkout,
+                    onClick = onOpenTraining,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -147,7 +151,7 @@ fun HomeContent(
                     .clip(RoundedCornerShape(28.dp))
                     .background(tokens.surface.copy(alpha = tokens.surfaceAlpha))
                     .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
-                    .clickable { onOpenHydration() }
+                    .clickable(onClick = onOpenHydration)
                     .padding(20.dp)
             ) {
                 Row(
@@ -213,14 +217,22 @@ fun HomeContent(
                 }
             }
 
-            // ── Theme-specific dashboard ────────────
+            // ── Theme-specific dashboard & Club card ─
             if (tokens.themeId == CaloThemeId.ThermalDark) {
-                ThermalHomeVariant(onStartWorkout = onStartWorkout, onOpenScanner = onOpenScanner)
+                ThermalHomeVariant(
+                    onStartWorkout = onStartWorkout,
+                    onOpenScanner = onOpenScanner,
+                    onOpenCrew = onOpenCrew,
+                    onOpenHistory = onOpenHistory
+                )
             } else {
                 EmeraldHomeVariant(
                     dailyCalorieGoal = dailyCalorieGoal,
                     onStartWorkout = onStartWorkout,
-                    onOpenScanner = onOpenScanner
+                    onOpenScanner = onOpenScanner,
+                    onOpenGoals = onOpenGoals,
+                    onOpenHistory = onOpenHistory,
+                    onOpenCrew = onOpenCrew
                 )
             }
 
@@ -233,7 +245,10 @@ fun HomeContent(
 fun EmeraldHomeVariant(
     dailyCalorieGoal: Int,
     onStartWorkout: () -> Unit,
-    onOpenScanner: () -> Unit
+    onOpenScanner: () -> Unit,
+    onOpenGoals: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onOpenCrew: () -> Unit
 ) {
     val tokens = CaloTheme.tokens
 
@@ -243,7 +258,7 @@ fun EmeraldHomeVariant(
             shape = RoundedCornerShape(28.dp),
             color = tokens.surface.copy(alpha = tokens.surfaceAlpha),
             border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.3f)),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenScanner)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -262,15 +277,16 @@ fun EmeraldHomeVariant(
                     )
                     Box(
                         modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
                             .background(
                                 (tokens.greenStateContainer
-                                    ?: tokens.surface.copy(alpha = 0.5f)),
-                                RoundedCornerShape(12.dp)
+                                    ?: tokens.surface.copy(alpha = 0.5f))
                             )
+                            .clickable(onClick = onOpenGoals)
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            "Goal: $dailyCalorieGoal",
+                            "Goal: $dailyCalorieGoal kcal",
                             color = tokens.energyMark,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold
@@ -278,14 +294,13 @@ fun EmeraldHomeVariant(
                     }
                 }
 
-                // Summary message
                 Text(
-                    "Log meals from the Scan tab and check Insights for a full macro breakdown.",
+                    "Log meals with AI Vision or manual catalog search. Check Insights for macro breakdown.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = tokens.muted
                 )
 
-                // Macro legend
+                // Macro legend row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -297,15 +312,57 @@ fun EmeraldHomeVariant(
             }
         }
 
-        // Recent Activity
+        // Community Club Card
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = tokens.surface.copy(alpha = tokens.surfaceAlpha),
+            border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenCrew)
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(tokens.nutritionMark.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Groups, contentDescription = null, tint = tokens.nutritionMark, modifier = Modifier.size(24.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Sunset Striders Crew", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Text("74% · 1,840 / 2,500 km Challenge", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
+                }
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted)
+            }
+        }
+
+        // Recent Activity Card (Navigates to History)
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text(
-                "RECENT ACTIVITY",
-                style = MaterialTheme.typography.labelSmall,
-                color = tokens.muted,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "RECENT ACTIVITY",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = tokens.muted,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    "View All",
+                    color = tokens.energyMark,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(onClick = onOpenHistory)
+                )
+            }
 
             Surface(
                 shape = RoundedCornerShape(24.dp),
@@ -313,7 +370,7 @@ fun EmeraldHomeVariant(
                 border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.3f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onStartWorkout)
+                    .clickable(onClick = onOpenHistory)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -346,13 +403,13 @@ fun EmeraldHomeVariant(
                             }
                             Column {
                                 Text(
-                                    "Start a new workout",
+                                    "Morning Tempo Run",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = tokens.text,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    "GPS run, ride or gym session",
+                                    "Today, 7:30 AM · 8.42 km · 610 kcal",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = tokens.muted
                                 )
@@ -373,11 +430,13 @@ fun EmeraldHomeVariant(
 @Composable
 fun ThermalHomeVariant(
     onStartWorkout: () -> Unit,
-    onOpenScanner: () -> Unit
+    onOpenScanner: () -> Unit,
+    onOpenCrew: () -> Unit,
+    onOpenHistory: () -> Unit
 ) {
     val tokens = CaloTheme.tokens
 
-    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         // Glassmorphic Action Blocks
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -432,6 +491,24 @@ fun ThermalHomeVariant(
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.muted
                 )
+            }
+        }
+
+        // Club Card for Thermal
+        GlassCard(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenCrew),
+            tokens = tokens
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Groups, contentDescription = null, tint = tokens.aiMark, modifier = Modifier.size(24.dp))
+                    Text("Sunset Striders Club", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                }
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = tokens.muted)
             }
         }
     }

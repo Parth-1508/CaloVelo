@@ -1,19 +1,21 @@
 package com.calovelo.app.presentation.workout
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,7 +29,8 @@ import kotlin.math.roundToInt
 @Composable
 fun WorkoutContent(
     modifier: Modifier = Modifier,
-    onStartWorkout: () -> Unit = {}
+    onStartWorkout: () -> Unit = {},
+    onNavigateBack: () -> Unit = {}
 ) {
     val tokens = CaloTheme.tokens
     var isRecording by remember { mutableStateOf(false) }
@@ -36,45 +39,84 @@ fun WorkoutContent(
     var rpeValue by remember { mutableStateOf(RpeScale.DEFAULT.toFloat()) }
     var selectedFeeling by remember { mutableStateOf<FeelingTag?>(null) }
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = tokens.background
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(tokens.background, tokens.surface.copy(alpha = 0.15f), tokens.background)
+                )
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header
+            // ── Header with Back ────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text("ACTIVE TRACKING", style = MaterialTheme.typography.labelMedium, color = tokens.muted, fontWeight = FontWeight.Bold)
-                    Text("Workout & Recovery", style = MaterialTheme.typography.headlineMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(tokens.surface.copy(alpha = 0.5f))
+                        .border(1.dp, tokens.border.copy(alpha = 0.3f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = tokens.text,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
-                Badge(containerColor = tokens.greenStateContainer ?: tokens.surface) {
-                    Text(if (isRecording) "RECORDING" else "READY", color = tokens.energyMark, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "LIVE TRACKING",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tokens.energyMark,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.5.sp
+                    )
+                    Text(
+                        "Workout & Recovery",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = tokens.text,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(tokens.greenStateContainer ?: tokens.surface.copy(alpha = 0.5f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(if (isRecording) "RECORDING" else "READY", color = tokens.energyMark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            // Live Stats Card
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
+            // ── Live Stats Card ─────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(tokens.surface.copy(alpha = tokens.surfaceAlpha))
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
+                    .padding(24.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("00:42:18", style = MaterialTheme.typography.displayMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+                    Text("00:42:18", style = MaterialTheme.typography.displayMedium, color = tokens.text, fontWeight = FontWeight.Black)
                     Text("Elapsed Time", style = MaterialTheme.typography.bodySmall, color = tokens.muted)
 
                     Row(
@@ -85,6 +127,8 @@ fun WorkoutContent(
                         WorkoutStatItem("Pace", "4:48 /km", tokens)
                         WorkoutStatItem("Speed", "12.5 km/h", tokens)
                     }
+
+                    HorizontalDivider(color = tokens.border.copy(alpha = 0.2f))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -97,7 +141,7 @@ fun WorkoutContent(
                 }
             }
 
-            // Controls
+            // ── Controls ────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -106,22 +150,24 @@ fun WorkoutContent(
                     Button(
                         onClick = { isRecording = true; isPaused = false; onStartWorkout() },
                         colors = ButtonDefaults.buttonColors(containerColor = tokens.startFill, contentColor = tokens.onStart),
-                        modifier = Modifier.weight(1f)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp)
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Start Tracking")
+                        Text("Start Live GPS Tracking", fontWeight = FontWeight.Bold)
                     }
                 } else {
                     OutlinedButton(
                         onClick = { isPaused = !isPaused },
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = tokens.text),
-                        border = BorderStroke(1.dp, tokens.border),
-                        modifier = Modifier.weight(1f)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f).height(52.dp)
                     ) {
                         Icon(if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text(if (isPaused) "Resume" else "Pause")
+                        Text(if (isPaused) "Resume" else "Pause", fontWeight = FontWeight.Bold)
                     }
 
                     Button(
@@ -131,33 +177,39 @@ fun WorkoutContent(
                             showRpeSheet = true
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = tokens.proteinMark, contentColor = Color.White),
-                        modifier = Modifier.weight(1f)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f).height(52.dp)
                     ) {
                         Icon(Icons.Default.Stop, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Finish")
+                        Text("Finish", fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
-            // Recovery Session Card
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = tokens.surface,
-                border = BorderStroke(1.dp, tokens.border),
-                modifier = Modifier.fillMaxWidth()
+            // ── Recovery Card ───────────────────────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background((tokens.aiStateContainer ?: tokens.surface).copy(alpha = 0.6f))
+                    .border(1.dp, tokens.border.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+                    .padding(20.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Favorite, contentDescription = null, tint = tokens.heartMark)
                         Text("Recovery & Strain Analysis", style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
                     }
-                    Text("Your cardio load is balanced. Recommended active recovery: 20 min easy spin or stretching.", style = MaterialTheme.typography.bodyMedium, color = tokens.muted)
+                    Text(
+                        "Your cardio strain is balanced. Recommended active recovery: 20 min easy spin or foam rolling.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = tokens.muted
+                    )
                 }
             }
+
+            Spacer(Modifier.height(60.dp))
         }
     }
 
@@ -207,8 +259,8 @@ fun WorkoutContent(
 
 @Composable
 fun WorkoutStatItem(label: String, value: String, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = tokens.muted)
-        Text(value, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Bold)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(value, style = MaterialTheme.typography.titleMedium, color = tokens.text, fontWeight = FontWeight.Black)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tokens.muted)
     }
 }

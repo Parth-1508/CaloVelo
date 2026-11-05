@@ -7,6 +7,8 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,10 +30,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -47,7 +49,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -67,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.calovelo.app.core.format.WorkoutFormatters
 import com.calovelo.app.domain.model.ActivityType
 import com.calovelo.app.domain.model.LatLng
+import com.calovelo.app.presentation.theme.CaloTheme
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
@@ -77,6 +82,7 @@ fun ActiveWorkoutScreen(
     onNavigateBack: () -> Unit,
     viewModel: ActiveWorkoutViewModel = hiltViewModel()
 ) {
+    val tokens = CaloTheme.tokens
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val view = LocalView.current
@@ -120,14 +126,18 @@ fun ActiveWorkoutScreen(
     }
 
     Scaffold(
+        containerColor = tokens.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Workout") },
+                title = { Text("Workout", color = tokens.text, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = tokens.text)
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = tokens.background
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -142,14 +152,16 @@ fun ActiveWorkoutScreen(
             ActivitySelector(
                 selected = state.displayedActivity,
                 enabled = !isTracking,
-                onSelected = viewModel::onActivitySelected
+                onSelected = viewModel::onActivitySelected,
+                tokens = tokens
             )
 
-            MetricsPanel(state = state)
+            MetricsPanel(state = state, tokens = tokens)
 
             RoutePreview(
                 points = state.tracking.currentRoutePoints,
                 isTracking = isTracking,
+                tokens = tokens,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -159,6 +171,7 @@ fun ActiveWorkoutScreen(
             ControlButtons(
                 isTracking = isTracking,
                 isPaused = state.tracking.isPaused,
+                tokens = tokens,
                 onStart = onStartClick,
                 onPause = viewModel::onPauseClicked,
                 onResume = viewModel::onResumeClicked,
@@ -181,7 +194,8 @@ fun ActiveWorkoutScreen(
 private fun ActivitySelector(
     selected: ActivityType,
     enabled: Boolean,
-    onSelected: (ActivityType) -> Unit
+    onSelected: (ActivityType) -> Unit,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens
 ) {
     val options = ActivityType.entries
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -190,16 +204,25 @@ private fun ActivitySelector(
                 selected = type == selected,
                 onClick = { onSelected(type) },
                 enabled = enabled,
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size)
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = tokens.energyMark,
+                    activeContentColor = tokens.onStart,
+                    inactiveContainerColor = tokens.surface.copy(alpha = 0.5f),
+                    inactiveContentColor = tokens.muted
+                )
             ) {
-                Text(type.selectorLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(type.selectorLabel, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-private fun MetricsPanel(state: ActiveWorkoutUiState) {
+private fun MetricsPanel(
+    state: ActiveWorkoutUiState,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens
+) {
     val tracking = state.tracking
     val elapsed = WorkoutFormatters.formatElapsed(tracking.elapsedTimeSeconds)
     val statusLabel = when {
@@ -208,48 +231,66 @@ private fun MetricsPanel(state: ActiveWorkoutUiState) {
         else -> "RECORDING"
     }
 
-    // inverseSurface / inverseOnSurface give maximum contrast in both light and dark themes.
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.inverseSurface,
-        contentColor = MaterialTheme.colorScheme.inverseOnSurface
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(tokens.surface.copy(alpha = 0.95f))
+            .border(1.dp, tokens.border.copy(alpha = 0.35f), RoundedCornerShape(28.dp))
+            .padding(horizontal = 16.dp, vertical = 20.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = statusLabel,
-                style = MaterialTheme.typography.labelLarge,
-                letterSpacing = 2.sp
-            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(tokens.greenStateContainer ?: tokens.surface.copy(alpha = 0.5f))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = statusLabel,
+                    color = tokens.energyMark,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+            }
+
             Text(
                 text = elapsed,
-                fontSize = 64.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 58.sp,
+                fontWeight = FontWeight.Black,
+                color = tokens.text,
                 maxLines = 1,
                 modifier = Modifier.semantics { contentDescription = "Elapsed time $elapsed" }
             )
+
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Metric(
                     value = WorkoutFormatters.formatDistanceKm(tracking.distanceMeters),
-                    label = "km"
+                    label = "km",
+                    tokens = tokens
                 )
                 Metric(
                     value = WorkoutFormatters.formatPace(tracking.currentPaceSecondsPerKm),
-                    label = "min/km"
+                    label = "min/km",
+                    tokens = tokens
                 )
                 Metric(
                     value = tracking.estimatedCalories.toString(),
-                    label = "kcal"
+                    label = "kcal",
+                    tokens = tokens
                 )
             }
             if (state.displayedActivity == ActivityType.OUTDOOR_CYCLING) {
                 Text(
                     text = "${WorkoutFormatters.formatSpeedKmh(tracking.currentSpeedKmh)} km/h",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = tokens.text,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -257,10 +298,10 @@ private fun MetricsPanel(state: ActiveWorkoutUiState) {
 }
 
 @Composable
-private fun Metric(value: String, label: String) {
+private fun Metric(value: String, label: String, tokens: com.calovelo.app.presentation.theme.CaloTokens) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Text(value, fontSize = 28.sp, fontWeight = FontWeight.Black, color = tokens.text, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = tokens.muted)
     }
 }
 
@@ -268,23 +309,28 @@ private fun Metric(value: String, label: String) {
 private fun ControlButtons(
     isTracking: Boolean,
     isPaused: Boolean,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onFinish: () -> Unit
 ) {
-    val buttonHeight = 72.dp
-    val shape = RoundedCornerShape(36.dp)
+    val buttonHeight = 64.dp
+    val shape = RoundedCornerShape(22.dp)
 
     if (!isTracking) {
         Button(
             onClick = onStart,
             modifier = Modifier.fillMaxWidth().height(buttonHeight),
-            shape = shape
+            shape = shape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = tokens.startFill,
+                contentColor = tokens.onStart
+            )
         ) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(32.dp))
+            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(28.dp))
             Spacer(Modifier.size(8.dp))
-            Text("Start", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text("Start Workout", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
     } else {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -292,21 +338,27 @@ private fun ControlButtons(
                 Button(
                     onClick = onResume,
                     modifier = Modifier.weight(1f).height(buttonHeight),
-                    shape = shape
+                    shape = shape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = tokens.startFill,
+                        contentColor = tokens.onStart
+                    )
                 ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Resume", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Resume", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             } else {
-                FilledTonalButton(
+                OutlinedButton(
                     onClick = onPause,
                     modifier = Modifier.weight(1f).height(buttonHeight),
-                    shape = shape
+                    shape = shape,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, tokens.border.copy(alpha = 0.5f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = tokens.text)
                 ) {
-                    Icon(Icons.Filled.Pause, contentDescription = null, modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.Pause, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Pause", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Pause", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Button(
@@ -314,13 +366,13 @@ private fun ControlButtons(
                 modifier = Modifier.weight(1f).height(buttonHeight),
                 shape = shape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
+                    containerColor = tokens.proteinMark,
+                    contentColor = Color.White
                 )
             ) {
-                Icon(Icons.Filled.Stop, contentDescription = null, modifier = Modifier.size(28.dp))
+                Icon(Icons.Filled.Stop, contentDescription = null, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.size(6.dp))
-                Text("Finish", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Finish", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -331,54 +383,55 @@ private fun ControlButtons(
 private fun RoutePreview(
     points: List<LatLng>,
     isTracking: Boolean,
+    tokens: com.calovelo.app.presentation.theme.CaloTokens,
     modifier: Modifier = Modifier
 ) {
-    val lineColor = MaterialTheme.colorScheme.primary
-    val startColor = MaterialTheme.colorScheme.tertiary
-    val currentColor = MaterialTheme.colorScheme.error
+    val lineColor = tokens.mapRoute
+    val startColor = tokens.mapBeacon
+    val currentColor = tokens.proteinMark
 
-    Surface(
-        modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceVariant
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(tokens.mapBackground)
+            .border(1.dp, tokens.border.copy(alpha = 0.35f), RoundedCornerShape(24.dp)),
+        contentAlignment = Alignment.Center
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
-                    .semantics { contentDescription = "Route preview with ${points.size} recorded points" }
-            ) {
-                if (points.isEmpty()) return@Canvas
-                val projected = projectRoute(points, size.width, size.height)
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp)
+                .semantics { contentDescription = "Route preview with ${points.size} recorded points" }
+        ) {
+            if (points.isEmpty()) return@Canvas
+            val projected = projectRoute(points, size.width, size.height)
 
-                if (projected.size >= 2) {
-                    val path = Path().apply {
-                        moveTo(projected.first().x, projected.first().y)
-                        for (i in 1 until projected.size) lineTo(projected[i].x, projected[i].y)
-                    }
-                    drawPath(
-                        path = path,
-                        color = lineColor,
-                        style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                    )
+            if (projected.size >= 2) {
+                val path = Path().apply {
+                    moveTo(projected.first().x, projected.first().y)
+                    for (i in 1 until projected.size) lineTo(projected[i].x, projected[i].y)
                 }
-                drawCircle(color = startColor, radius = 8.dp.toPx(), center = projected.first())
-                drawCircle(color = currentColor, radius = 10.dp.toPx(), center = projected.last())
-            }
-            if (points.isEmpty()) {
-                Text(
-                    text = if (isTracking) {
-                        "Waiting for a GPS fix…"
-                    } else {
-                        "Your route will appear here"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
+                drawPath(
+                    path = path,
+                    color = lineColor,
+                    style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                 )
             }
+            drawCircle(color = startColor, radius = 8.dp.toPx(), center = projected.first())
+            drawCircle(color = currentColor, radius = 10.dp.toPx(), center = projected.last())
+        }
+        if (points.isEmpty()) {
+            Text(
+                text = if (isTracking) {
+                    "Waiting for a GPS fix…"
+                } else {
+                    "Live GPS route will appear here"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = tokens.muted,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }

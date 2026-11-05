@@ -207,6 +207,13 @@ class FoodScannerViewModel @Inject constructor(
                     }
                 }
         }
+        // Immediately load default catalog results on launch
+        viewModelScope.launch {
+            try {
+                val initial = searchFoods("")
+                _uiState.update { it.copy(searchResults = initial) }
+            } catch (_: Exception) {}
+        }
     }
 
     companion object {
