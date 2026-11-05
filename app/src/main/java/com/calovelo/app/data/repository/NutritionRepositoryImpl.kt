@@ -79,10 +79,15 @@ class NutritionRepositoryImpl @Inject constructor(
 
     override suspend fun searchFoods(query: String, limit: Int): List<FoodItem> {
         seeder.ensureSeeded()
-        val q = FoodSearchQuery.from(query)
-        return foodCatalogDao
-            .search(q.token1, q.token2, q.token3, q.prefixPattern, limit.coerceIn(1, MAX_SEARCH_LIMIT))
-            .map { it.toDomain() }
+        val effectiveLimit = limit.coerceIn(1, MAX_SEARCH_LIMIT)
+        return if (query.isBlank()) {
+            foodCatalogDao.getAll().take(effectiveLimit).map { it.toDomain() }
+        } else {
+            val q = FoodSearchQuery.from(query)
+            foodCatalogDao
+                .search(q.token1, q.token2, q.token3, q.prefixPattern, effectiveLimit)
+                .map { it.toDomain() }
+        }
     }
 
     override suspend fun logMeals(entries: List<MealEntry>, mealType: MealType) {

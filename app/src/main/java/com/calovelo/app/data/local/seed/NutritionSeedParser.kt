@@ -50,8 +50,7 @@ object NutritionSeedParser {
         val id = "'$labelKey'"
         require(LABEL_KEY.matches(labelKey)) { "labelKey $id must be snake_case [a-z0-9_]." }
         require(displayName.isNotBlank()) { "$id has a blank displayName." }
-        val foodCategory = FoodCategory.entries.firstOrNull { it.key == category }
-        requireNotNull(foodCategory) { "$id has unknown category '$category'." }
+        val foodCategory = FoodCategory.fromKey(category)
         require(defaultServingGrams in 1..2_000) { "$id defaultServingGrams $defaultServingGrams is out of range." }
         listOf(kcalPer100g, proteinPer100g, carbsPer100g, fatPer100g, fiberPer100g).forEach {
             require(it.isFinite() && it >= 0.0) { "$id has a negative or non-finite nutrient value." }

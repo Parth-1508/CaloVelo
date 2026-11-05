@@ -203,7 +203,7 @@ class FoodScannerViewModel @Inject constructor(
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        _uiState.update { it.copy(userMessage = "Couldn't search the food catalog.") }
+                        _uiState.update { it.copy(userMessage = "Couldn't search the food catalog: ${e.localizedMessage ?: e.javaClass.simpleName}") }
                     }
                 }
         }

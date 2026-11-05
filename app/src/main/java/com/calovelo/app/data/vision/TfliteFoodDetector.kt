@@ -57,10 +57,12 @@ class TfliteFoodDetector @Inject constructor(
             val interpreter: Interpreter,
             val labels: List<String>,
             val inputSize: Int,
+            val inputLayout: InputLayout,
             val layout: YoloLayout,
-            val numAnchors: Int
+            val numAnchors: Int,
+            val numClasses: Int
         ) : ModelState {
-            val outputElementCount: Int get() = (4 + labels.size) * numAnchors
+            val outputElementCount: Int get() = (4 + numClasses) * numAnchors
         }
 
         class Unavailable(val reason: String) : ModelState
@@ -85,14 +87,14 @@ class TfliteFoodDetector @Inject constructor(
             is ModelState.Ready -> state
         }
         try {
-            val prepared = preprocessor.preprocess(bitmap, ready.inputSize, ResizeMode.LETTERBOX)
+            val prepared = preprocessor.preprocess(bitmap, ready.inputSize, ResizeMode.LETTERBOX, ready.inputLayout)
             val output = FloatArray(ready.outputElementCount)
             inferenceMutex.withLock { runInference(ready, prepared.buffer, output) }
 
             val raw = YoloOutputDecoder.decode(
                 output = output,
                 numAnchors = ready.numAnchors,
-                numClasses = ready.labels.size,
+                numClasses = ready.numClasses,
                 layout = ready.layout,
                 inputSize = ready.inputSize,
                 confidenceThreshold = CONFIDENCE_THRESHOLD
@@ -101,14 +103,17 @@ class TfliteFoodDetector @Inject constructor(
             if (kept.isEmpty()) return@withContext FoodScanResult.NothingDetected()
 
             seeder.ensureSeeded()
-            val keys = kept.map { FoodLabelKey.fromLabel(ready.labels[it.classId]) }
+            val keys = kept.map { detection ->
+                val label = ready.labels.getOrElse(detection.classId) { "food_${it + 1}" }
+                FoodLabelKey.fromLabel(label)
+            }
             val foodsByKey = catalogDao.getByLabelKeys(keys.distinct()).associateBy { it.labelKey }
 
             val unmapped = LinkedHashSet<String>()
             val candidates = kept.mapIndexedNotNull { index, detection ->
                 val food = foodsByKey[keys[index]]
                 if (food == null) {
-                    unmapped += ready.labels[detection.classId]
+                    unmapped += ready.labels.getOrElse(detection.classId) { "food_${detection.classId + 1}" }
                     null
                 } else {
                     val box = prepared.transform.toSourceNormalized(detection.box)
@@ -195,8 +200,14 @@ class TfliteFoodDetector @Inject constructor(
         if (input.dataType() != DataType.FLOAT32) {
             return reject("Model input must be float32 (found ${input.dataType()}). Re-export without int8 quantization.")
         }
-        if (inShape.size != 4 || inShape[0] != 1 || inShape[3] != 3 || inShape[1] != inShape[2]) {
-            return reject("Model input must be [1, S, S, 3] (found ${inShape.contentToString()}).")
+        val (inputSize, inputLayout) = when {
+            // NHWC: [1, S, S, 3]
+            inShape.size == 4 && inShape[0] == 1 && inShape[3] == 3 && inShape[1] == inShape[2] ->
+                inShape[1] to InputLayout.NHWC
+            // NCHW: [1, 3, S, S]
+            inShape.size == 4 && inShape[0] == 1 && inShape[1] == 3 && inShape[2] == inShape[3] ->
+                inShape[2] to InputLayout.NCHW
+            else -> return reject("Model input must be [1, S, S, 3] or [1, 3, S, S] (found ${inShape.contentToString()}).")
         }
 
         val output = interpreter.getOutputTensor(0)
@@ -205,20 +216,36 @@ class TfliteFoodDetector @Inject constructor(
             return reject("Model output must be float32 (found ${output.dataType()}).")
         }
         if (outShape.size != 3 || outShape[0] != 1) {
-            return reject("Model output must be [1, 4+classes, anchors] (found ${outShape.contentToString()}).")
+            return reject("Model output must be [1, 4+classes, anchors] or [1, anchors, 4+classes] (found ${outShape.contentToString()}).")
         }
 
-        val channels = 4 + labels.size
-        return when {
-            outShape[1] == channels && outShape[2] != channels ->
-                ModelState.Ready(interpreter, labels, inShape[1], YoloLayout.CHANNELS_FIRST, outShape[2])
-            outShape[2] == channels ->
-                ModelState.Ready(interpreter, labels, inShape[1], YoloLayout.CHANNELS_LAST, outShape[1])
-            else -> reject(
-                "Model output ${outShape.contentToString()} doesn't match ${labels.size} labels in $LABELS_ASSET " +
-                    "(expected a dimension of ${channels}). Make sure the labels file lists every class, one per line."
-            )
+        val (channels, numAnchors, layout) = when {
+            outShape[1] < outShape[2] -> Triple(outShape[1], outShape[2], YoloLayout.CHANNELS_FIRST)
+            else -> Triple(outShape[2], outShape[1], YoloLayout.CHANNELS_LAST)
         }
+
+        val modelNumClasses = channels - 4
+        if (modelNumClasses <= 0) {
+            return reject("Model output ${outShape.contentToString()} does not contain valid class channels (channels = $channels).")
+        }
+
+        val effectiveLabels = if (labels.size == modelNumClasses) {
+            labels
+        } else if (labels.size < modelNumClasses) {
+            labels + (labels.size until modelNumClasses).map { "food_${it + 1}" }
+        } else {
+            labels.take(modelNumClasses)
+        }
+
+        return ModelState.Ready(
+            interpreter = interpreter,
+            labels = effectiveLabels,
+            inputSize = inputSize,
+            inputLayout = inputLayout,
+            layout = layout,
+            numAnchors = numAnchors,
+            numClasses = modelNumClasses
+        )
     }
 
     companion object {

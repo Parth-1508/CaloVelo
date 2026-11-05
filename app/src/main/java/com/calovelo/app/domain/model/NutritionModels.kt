@@ -55,8 +55,24 @@ enum class FoodCategory(val key: String, val displayName: String) {
     OTHER("other", "Other");
 
     companion object {
-        fun fromKey(key: String?): FoodCategory =
-            entries.firstOrNull { it.key.equals(key?.trim(), ignoreCase = true) } ?: OTHER
+        fun fromKey(key: String?): FoodCategory {
+            if (key == null) return OTHER
+            val trimmed = key.trim()
+            entries.firstOrNull { it.key.equals(trimmed, ignoreCase = true) }?.let { return it }
+            entries.firstOrNull { it.displayName.equals(trimmed, ignoreCase = true) }?.let { return it }
+            return when (trimmed.lowercase()) {
+                "breads", "grains", "rice dishes", "staples" -> GRAIN
+                "curries & dal", "dals & legumes", "curries", "legumes" -> LEGUME
+                "poultry & meat", "meat", "poultry", "proteins" -> PROTEIN
+                "eggs & dairy", "dairy" -> DAIRY
+                "south indian", "mixed meals" -> MIXED_MEAL
+                "nuts & seeds", "snacks" -> SNACK
+                "fruits" -> FRUIT
+                "vegetables" -> VEGETABLE
+                "breakfast" -> BREAKFAST
+                else -> OTHER
+            }
+        }
     }
 }
 

@@ -33,6 +33,14 @@ enum class ResizeMode {
     CENTER_CROP
 }
 
+enum class InputLayout {
+    /** Float32, NHWC, [1, S, S, 3], interleaved RGB */
+    NHWC,
+
+    /** Float32, NCHW, [1, 3, S, S], planar R, then G, then B (PyTorch export default) */
+    NCHW
+}
+
 /**
  * Turns a photo into the 640x640 Float32 tensor the detector expects:
  * decode (downsampled) -> apply EXIF orientation -> letterbox / center-crop -> normalize to [0..1].
@@ -76,7 +84,8 @@ class BitmapPreprocessor @Inject constructor() {
     fun preprocess(
         source: Bitmap,
         inputSize: Int = DEFAULT_INPUT_SIZE,
-        mode: ResizeMode = ResizeMode.LETTERBOX
+        mode: ResizeMode = ResizeMode.LETTERBOX,
+        inputLayout: InputLayout = InputLayout.NHWC
     ): PreprocessedImage {
         val transform = when (mode) {
             ResizeMode.LETTERBOX -> ImageTransform.letterbox(source.width, source.height, inputSize)
@@ -96,23 +105,38 @@ class BitmapPreprocessor @Inject constructor() {
                 transform.offsetY + source.height * transform.scale
             )
             canvas.drawBitmap(source, null, destination, Paint(Paint.FILTER_BITMAP_FLAG))
-            return PreprocessedImage(toNormalizedBuffer(square), transform)
+            return PreprocessedImage(toNormalizedBuffer(square, inputLayout), transform)
         } finally {
             square.recycle()
         }
     }
 
-    private fun toNormalizedBuffer(square: Bitmap): ByteBuffer {
+    private fun toNormalizedBuffer(square: Bitmap, layout: InputLayout = InputLayout.NHWC): ByteBuffer {
         val size = square.width
         val pixels = IntArray(size * size)
         square.getPixels(pixels, 0, size, 0, 0, size, size)
 
         val buffer = ByteBuffer.allocateDirect(size * size * CHANNELS * BYTES_PER_FLOAT)
             .order(ByteOrder.nativeOrder())
-        for (pixel in pixels) {
-            buffer.putFloat(Color.red(pixel) * INV_255)
-            buffer.putFloat(Color.green(pixel) * INV_255)
-            buffer.putFloat(Color.blue(pixel) * INV_255)
+        when (layout) {
+            InputLayout.NHWC -> {
+                for (pixel in pixels) {
+                    buffer.putFloat(Color.red(pixel) * INV_255)
+                    buffer.putFloat(Color.green(pixel) * INV_255)
+                    buffer.putFloat(Color.blue(pixel) * INV_255)
+                }
+            }
+            InputLayout.NCHW -> {
+                for (pixel in pixels) {
+                    buffer.putFloat(Color.red(pixel) * INV_255)
+                }
+                for (pixel in pixels) {
+                    buffer.putFloat(Color.green(pixel) * INV_255)
+                }
+                for (pixel in pixels) {
+                    buffer.putFloat(Color.blue(pixel) * INV_255)
+                }
+            }
         }
         buffer.rewind()
         return buffer
