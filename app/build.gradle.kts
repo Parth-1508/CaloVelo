@@ -27,7 +27,6 @@ android {
             properties.load(localPropertiesFile.inputStream())
         }
         val geminiKey = properties.getProperty("GEMINI_API_KEY") ?: ""
-        val mapsKey = properties.getProperty("MAPS_API_KEY") ?: ""
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
         buildConfigField("String", "GEMINI_BURNER_KEY_1", "\"${properties.getProperty("GEMINI_BURNER_KEY_1") ?: ""}\"")
@@ -37,7 +36,6 @@ android {
         buildConfigField("String", "GEMINI_BURNER_KEY_5", "\"${properties.getProperty("GEMINI_BURNER_KEY_5") ?: ""}\"")
         buildConfigField("String", "GEMINI_BURNER_KEY_6", "\"${properties.getProperty("GEMINI_BURNER_KEY_6") ?: ""}\"")
         buildConfigField("String", "GEMINI_BURNER_KEY_7", "\"${properties.getProperty("GEMINI_BURNER_KEY_7") ?: ""}\"")
-        manifestPlaceholders["MAPS_API_KEY"] = mapsKey
     }
 
     buildTypes {
@@ -133,9 +131,8 @@ dependencies {
     // Google GenAI (Gemini Flash Vision)
     implementation(libs.google.ai.generativeai)
 
-    // Google Maps Compose
-    implementation(libs.maps.compose)
-    implementation(libs.play.services.maps)
+    // OpenStreetMap (OSMDroid) — 100% Free Maps without API Keys or Credit Cards
+    implementation(libs.osmdroid.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -9,7 +9,9 @@
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
 
-    <!-- Live GPS workout recording -->
+    <!-- OpenStreetMap tile fetching & Live GPS workout recording -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -80,11 +82,6 @@
             android:name=".service.WorkoutTrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
-
-        <!-- Google Maps API Key from local.properties -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${MAPS_API_KEY}" />
 
         <receiver
             android:name=".worker.WaterQuickAddReceiver"

@@ -65,8 +65,7 @@ tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.
 tensorflow-lite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 google-ai-generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version = "0.9.0" }
-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version = "6.4.4" }
-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version = "19.0.0" }
+osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version = "6.1.20" }
 
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }

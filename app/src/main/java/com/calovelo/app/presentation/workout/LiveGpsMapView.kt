@@ -1,7 +1,7 @@
 package com.calovelo.app.presentation.workout
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.graphics.Color as AndroidColor
+import android.graphics.Paint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,45 +20,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.viewinterop.AndroidView
 import com.calovelo.app.domain.model.LatLng
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng as GmsLatLng
-import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.maps.android.compose.*
-import kotlinx.coroutines.launch
-
-private const val STRAVA_DARK_MAP_STYLE = """
-[
-  {"elementType": "geometry", "stylers": [{"color": "#17263c"}]},
-  {"elementType": "labels.text.fill", "stylers": [{"color": "#8ec3b9"}]},
-  {"elementType": "labels.text.stroke", "stylers": [{"color": "#1a3646"}]},
-  {"featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{"color": "#4b6878"}]},
-  {"featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{"color": "#64779e"}]},
-  {"featureType": "administrative.province", "elementType": "geometry.stroke", "stylers": [{"color": "#4b6878"}]},
-  {"featureType": "landscape.man_made", "elementType": "geometry.stroke", "stylers": [{"color": "#334e87"}]},
-  {"featureType": "landscape.natural", "elementType": "geometry", "stylers": [{"color": "#021019"}]},
-  {"featureType": "poi", "elementType": "geometry", "stylers": [{"color": "#283d6a"}]},
-  {"featureType": "poi", "elementType": "labels.text.fill", "stylers": [{"color": "#6f9ba5"}]},
-  {"featureType": "poi", "elementType": "labels.text.stroke", "stylers": [{"color": "#1d2c4d"}]},
-  {"featureType": "poi.park", "elementType": "geometry.fill", "stylers": [{"color": "#023e58"}]},
-  {"featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{"color": "#3C768D"}]},
-  {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#304a7d"}]},
-  {"featureType": "road", "elementType": "labels.text.fill", "stylers": [{"color": "#98a5be"}]},
-  {"featureType": "road", "elementType": "labels.text.stroke", "stylers": [{"color": "#1d2c4d"}]},
-  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#2c6675"}]},
-  {"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#255763"}]},
-  {"featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{"color": "#b0d5ce"}]},
-  {"featureType": "road.highway", "elementType": "labels.text.stroke", "stylers": [{"color": "#023e58"}]},
-  {"featureType": "transit", "elementType": "labels.text.fill", "stylers": [{"color": "#98a5be"}]},
-  {"featureType": "transit", "elementType": "labels.text.stroke", "stylers": [{"color": "#1d2c4d"}]},
-  {"featureType": "transit.line", "elementType": "geometry.fill", "stylers": [{"color": "#283d6a"}]},
-  {"featureType": "transit.station", "elementType": "geometry", "stylers": [{"color": "#3a4762"}]},
-  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#0e1626"}]},
-  {"featureType": "water", "elementType": "labels.text.fill", "stylers": [{"color": "#4e6d70"}]}
-]
-"""
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 
 @Composable
 fun LiveGpsMapView(
@@ -72,61 +41,84 @@ fun LiveGpsMapView(
     onBackClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
-    val hasFineLocation = ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED
-
-    val defaultCoord = GmsLatLng(18.5204, 73.8567) // Default Pune fallback
-    val initialPos = currentLocation?.let { GmsLatLng(it.latitude, it.longitude) } ?: defaultCoord
-
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(initialPos, 16.5f)
+    // Set user agent for OpenStreetMap tile server
+    LaunchedEffect(Unit) {
+        Configuration.getInstance().userAgentValue = context.packageName
     }
 
-    LaunchedEffect(currentLocation) {
-        currentLocation?.let { loc ->
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLng(GmsLatLng(loc.latitude, loc.longitude))
-            )
+    val defaultGeoPoint = remember { GeoPoint(18.5204, 73.8567) } // Pune default fallback
+    val currentGeoPoint = remember(currentLocation) {
+        currentLocation?.let { GeoPoint(it.latitude, it.longitude) } ?: defaultGeoPoint
+    }
+
+    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+
+    // Re-center map when location updates
+    LaunchedEffect(currentGeoPoint) {
+        mapViewRef?.let { map ->
+            if (currentLocation != null) {
+                map.controller.animateTo(currentGeoPoint)
+            }
         }
-    }
-
-    val mapProperties = remember(hasFineLocation) {
-        MapProperties(
-            isMyLocationEnabled = hasFineLocation,
-            mapStyleOptions = MapStyleOptions(STRAVA_DARK_MAP_STYLE)
-        )
-    }
-
-    val mapUiSettings = remember {
-        MapUiSettings(
-            myLocationButtonEnabled = false,
-            zoomControlsEnabled = false,
-            compassEnabled = false
-        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Interactive Google Map
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = mapProperties,
-            uiSettings = mapUiSettings
-        ) {
-            if (routePoints.size > 1) {
-                val gmsPoints = routePoints.map { GmsLatLng(it.latitude, it.longitude) }
-                // Strava electric cyan glowing polyline
-                Polyline(
-                    points = gmsPoints,
-                    color = Color(0xFF00D2FF),
-                    width = 14f
-                )
-            }
-        }
+        // OpenStreetMap View (100% Free, 0 API Keys, 0 Billing)
+        AndroidView(
+            factory = { ctx ->
+                MapView(ctx).apply {
+                    setTileSource(TileSourceFactory.MAPNIK)
+                    setMultiTouchControls(true)
+                    isTilesScaledToDpi = true
+                    controller.setZoom(17.0)
+                    controller.setCenter(currentGeoPoint)
+
+                    // Apply dark overlay filter for Strava-style night map
+                    overlayManager.tilesOverlay.setColorFilter(
+                        android.graphics.ColorMatrixColorFilter(
+                            floatArrayOf(
+                                -1.0f, 0.0f, 0.0f, 0.0f, 255.0f,
+                                0.0f, -1.0f, 0.0f, 0.0f, 255.0f,
+                                0.0f, 0.0f, -1.0f, 0.0f, 255.0f,
+                                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
+                            )
+                        )
+                    )
+
+                    mapViewRef = this
+                }
+            },
+            update = { map ->
+                map.overlays.clear()
+
+                // Draw glowing cyan route polyline
+                if (routePoints.size > 1) {
+                    val geoPoints = routePoints.map { GeoPoint(it.latitude, it.longitude) }
+                    val polyline = Polyline().apply {
+                        setPoints(geoPoints)
+                        outlinePaint.color = AndroidColor.parseColor("#00D2FF")
+                        outlinePaint.strokeWidth = 14f
+                        outlinePaint.strokeCap = Paint.Cap.ROUND
+                        outlinePaint.strokeJoin = Paint.Join.ROUND
+                    }
+                    map.overlays.add(polyline)
+                }
+
+                // Draw current location pulse marker
+                if (currentLocation != null) {
+                    val userMarker = Marker(map).apply {
+                        position = currentGeoPoint
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        title = "Current Location"
+                    }
+                    map.overlays.add(userMarker)
+                }
+
+                map.invalidate()
+            },
+            modifier = Modifier.fillMaxSize()
+        )
 
         // Top Header Overlay: Back button + Workout Banner
         Row(
@@ -141,7 +133,7 @@ fun LiveGpsMapView(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.6f))
+                    .background(Color.Black.copy(alpha = 0.75f))
                     .clickable(onClick = onBackClick),
                 contentAlignment = Alignment.Center
             ) {
@@ -158,8 +150,8 @@ fun LiveGpsMapView(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(alpha = 0.75f))
-                    .border(1.dp, Color(0xFFFC4C02).copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.85f))
+                    .border(1.dp, Color(0xFFFC4C02).copy(alpha = 0.5f), RoundedCornerShape(24.dp))
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Row(
@@ -182,13 +174,13 @@ fun LiveGpsMapView(
                     }
                     Column {
                         Text(
-                            "CaloVelo GPS Tracker",
+                            "CaloVelo OpenMap Tracker",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
                         Text(
-                            "Live street polyline & HUD",
+                            "100% Free OpenStreetMap GPS",
                             color = Color.Gray,
                             fontSize = 11.sp
                         )
@@ -197,53 +189,23 @@ fun LiveGpsMapView(
             }
         }
 
-        // Floating Map Controls on Right (Layers, 3D, Re-center)
+        // Floating Map Controls on Right (Re-center location)
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Layers Icon
             Box(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.75f))
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Layers, contentDescription = "Layers", tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-
-            // 3D Tilt Icon
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.75f))
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("3D", color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp)
-            }
-
-            // Re-center Location Crosshair Button
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.75f))
+                    .background(Color.Black.copy(alpha = 0.85f))
                     .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                     .clickable {
-                        currentLocation?.let { loc ->
-                            coroutineScope.launch {
-                                cameraPositionState.animate(
-                                    CameraUpdateFactory.newLatLngZoom(
-                                        GmsLatLng(loc.latitude, loc.longitude),
-                                        17f
-                                    )
-                                )
+                        mapViewRef?.let { map ->
+                            currentLocation?.let { loc ->
+                                map.controller.animateTo(GeoPoint(loc.latitude, loc.longitude))
                             }
                         }
                     },
