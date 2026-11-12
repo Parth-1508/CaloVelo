@@ -71,7 +71,24 @@ fun UnifiedWorkoutScreen(
                 else -> ActivityType.RUNNING
             }
             activeWorkoutViewModel.onActivitySelected(actType)
-            activeWorkoutViewModel.onStartClicked()
+        }
+    }
+
+    // Automatically prompt for location permissions on screen open for GPS sports
+    LaunchedEffect(selectedSport) {
+        if (selectedSport.trackingType == SportTrackingType.GPS_CARDIO) {
+            val hasLocation = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasLocation) {
+                val req = mutableListOf(Manifest.permission.ACCESS_FINE_LOCATION)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    req.add(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                permissionLauncher.launch(req.toTypedArray())
+            }
         }
     }
 

@@ -1,7 +1,10 @@
 package com.calovelo.app.presentation.workout
 
-import android.graphics.Color as AndroidColor
+import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Paint
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,11 +26,64 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.calovelo.app.domain.model.LatLng
 import org.osmdroid.config.Configuration
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+
+/** High-DPI, ultra-sharp native dark mode map tiles (CartoDB DarkMatter) */
+private val CartoDbDarkMatter = object : OnlineTileSourceBase(
+    "CartoDB-DarkMatter",
+    0, 20, 256, ".png",
+    arrayOf(
+        "https://a.basemaps.cartocdn.com/dark_all/",
+        "https://b.basemaps.cartocdn.com/dark_all/",
+        "https://c.basemaps.cartocdn.com/dark_all/",
+        "https://d.basemaps.cartocdn.com/dark_all/"
+    )
+) {
+    override fun getTileURLString(pMapTileIndex: Long): String {
+        return baseUrl + MapTileIndex.getZoom(pMapTileIndex) + "/" +
+                MapTileIndex.getX(pMapTileIndex) + "/" +
+                MapTileIndex.getY(pMapTileIndex) + mImageFilenameEnding
+    }
+}
+
+/** Generates a crisp, high-resolution Strava-style location puck drawable */
+private fun createStravaLocationPuck(context: Context): BitmapDrawable {
+    val density = context.resources.displayMetrics.density
+    val sizePx = (48 * density).toInt()
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    val center = sizePx / 2f
+
+    // Outer pulsing aura
+    val auraPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = AndroidColor.parseColor("#4DFC4C02") // Strava Orange 30% alpha
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(center, center, center, auraPaint)
+
+    // White border ring
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = AndroidColor.WHITE
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(center, center, center * 0.45f, borderPaint)
+
+    // Inner Strava Orange core
+    val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = AndroidColor.parseColor("#FC4C02")
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(center, center, center * 0.32f, innerPaint)
+
+    return BitmapDrawable(context.resources, bitmap)
+}
 
 @Composable
 fun LiveGpsMapView(
@@ -53,6 +109,8 @@ fun LiveGpsMapView(
     }
 
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+    var locationOverlayRef by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    val puckIcon = remember(context) { createStravaLocationPuck(context) }
 
     // Re-center map when location updates
     LaunchedEffect(currentGeoPoint) {
@@ -64,33 +122,35 @@ fun LiveGpsMapView(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // OpenStreetMap View (100% Free, 0 API Keys, 0 Billing)
+        // High-DPI Sharp Dark Mode OpenStreetMap View
         AndroidView(
             factory = { ctx ->
                 MapView(ctx).apply {
-                    setTileSource(TileSourceFactory.MAPNIK)
+                    setTileSource(CartoDbDarkMatter)
                     setMultiTouchControls(true)
                     isTilesScaledToDpi = true
-                    controller.setZoom(17.0)
+                    controller.setZoom(17.5)
                     controller.setCenter(currentGeoPoint)
 
-                    // Apply dark overlay filter for Strava-style night map
-                    overlayManager.tilesOverlay.setColorFilter(
-                        android.graphics.ColorMatrixColorFilter(
-                            floatArrayOf(
-                                -1.0f, 0.0f, 0.0f, 0.0f, 255.0f,
-                                0.0f, -1.0f, 0.0f, 0.0f, 255.0f,
-                                0.0f, 0.0f, -1.0f, 0.0f, 255.0f,
-                                0.0f, 0.0f, 0.0f, 1.0f, 0.0f
-                            )
-                        )
-                    )
+                    // Add live GPS location overlay
+                    val myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this).apply {
+                        enableMyLocation()
+                        enableFollowLocation()
+                        setPersonIcon(puckIcon.bitmap)
+                    }
+                    overlays.add(myLocationOverlay)
+                    locationOverlayRef = myLocationOverlay
 
                     mapViewRef = this
                 }
             },
             update = { map ->
+                // Preserve location overlay, update route polylines & location puck
+                val locationOverlay = locationOverlayRef
                 map.overlays.clear()
+                if (locationOverlay != null) {
+                    map.overlays.add(locationOverlay)
+                }
 
                 // Draw glowing cyan route polyline
                 if (routePoints.size > 1) {
@@ -105,11 +165,12 @@ fun LiveGpsMapView(
                     map.overlays.add(polyline)
                 }
 
-                // Draw current location pulse marker
+                // Draw custom crisp location puck marker if available
                 if (currentLocation != null) {
                     val userMarker = Marker(map).apply {
                         position = currentGeoPoint
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        icon = puckIcon
                         title = "Current Location"
                     }
                     map.overlays.add(userMarker)
@@ -203,6 +264,7 @@ fun LiveGpsMapView(
                     .background(Color.Black.copy(alpha = 0.85f))
                     .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                     .clickable {
+                        locationOverlayRef?.enableFollowLocation()
                         mapViewRef?.let { map ->
                             currentLocation?.let { loc ->
                                 map.controller.animateTo(GeoPoint(loc.latitude, loc.longitude))
