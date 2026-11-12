@@ -37,6 +37,9 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.time.LocalDate
+import com.calovelo.app.domain.model.DietaryFilter
+import com.calovelo.app.domain.repository.SettingsRepository
+import com.calovelo.app.data.vision.GeminiVisionService
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -48,7 +51,9 @@ class NutritionRepositoryImpl @Inject constructor(
     private val summaryDao: HealthSummaryDao,
     private val seeder: FoodCatalogSeeder,
     private val detector: TfliteFoodDetector,
+    private val geminiVisionService: GeminiVisionService,
     private val preprocessor: BitmapPreprocessor,
+    private val settingsRepository: SettingsRepository,
     private val clock: Clock
 ) : NutritionRepository {
 
@@ -74,20 +79,38 @@ class NutritionRepositoryImpl @Inject constructor(
 
     override suspend fun getAllFoods(): List<FoodItem> {
         seeder.ensureSeeded()
-        return foodCatalogDao.getAll().map { it.toDomain() }
+        val filter = settingsRepository.dietaryFilter.first()
+        val isVegOnly = if (filter == DietaryFilter.VEG) 1 else 0
+        val isVeganOnly = if (filter == DietaryFilter.VEGAN) 1 else 0
+        val isEggOnly = if (filter == DietaryFilter.EGG_ONLY) 1 else 0
+        val isLactoseFreeOnly = if (filter == DietaryFilter.LACTOSE_INTOLERANT) 1 else 0
+
+        return foodCatalogDao
+            .getAllFiltered(isVegOnly, isVeganOnly, isEggOnly, isLactoseFreeOnly)
+            .map { it.toDomain() }
     }
 
     override suspend fun searchFoods(query: String, limit: Int): List<FoodItem> {
         seeder.ensureSeeded()
         val effectiveLimit = limit.coerceIn(1, MAX_SEARCH_LIMIT)
-        return if (query.isBlank()) {
-            foodCatalogDao.getAll().take(effectiveLimit).map { it.toDomain() }
-        } else {
-            val q = FoodSearchQuery.from(query)
-            foodCatalogDao
-                .search(q.token1, q.token2, q.token3, q.prefixPattern, effectiveLimit)
-                .map { it.toDomain() }
-        }
+        val filter = settingsRepository.dietaryFilter.first()
+        val isVegOnly = if (filter == DietaryFilter.VEG) 1 else 0
+        val isVeganOnly = if (filter == DietaryFilter.VEGAN) 1 else 0
+        val isEggOnly = if (filter == DietaryFilter.EGG_ONLY) 1 else 0
+        val isLactoseFreeOnly = if (filter == DietaryFilter.LACTOSE_INTOLERANT) 1 else 0
+
+        val q = FoodSearchQuery.from(query)
+        return foodCatalogDao.searchFiltered(
+            query = query.trim(),
+            token1 = q.token1,
+            token2 = q.token2,
+            token3 = q.token3,
+            isVegOnly = isVegOnly,
+            isVeganOnly = isVeganOnly,
+            isEggOnly = isEggOnly,
+            isLactoseFreeOnly = isLactoseFreeOnly,
+            limit = effectiveLimit
+        ).map { it.toDomain() }
     }
 
     override suspend fun logMeals(entries: List<MealEntry>, mealType: MealType) {
@@ -122,13 +145,34 @@ class NutritionRepositoryImpl @Inject constructor(
     override suspend fun deleteMeal(mealId: String) = mealLogDao.deleteById(mealId)
 
     override suspend fun scanFood(source: ImageSource): FoodScanResult {
-        // Cheap early exit: no point decoding a photo when there is no model to run on it.
-        detector.unavailableReason()?.let { return FoodScanResult.ModelUnavailable(it) }
-
         val bitmap = withContext(Dispatchers.IO) { preprocessor.decodeUpright({ source.open() }) }
             ?: return FoodScanResult.Failure("Couldn't read that image. Try another photo.")
         return try {
-            detector.detect(bitmap)
+            val localResult = if (detector.unavailableReason() == null) {
+                detector.detect(bitmap)
+            } else {
+                FoodScanResult.ModelUnavailable(detector.unavailableReason() ?: "Local model unavailable")
+            }
+
+            // If local detector detected items with high confidence (>= 0.60), return immediately
+            if (localResult is FoodScanResult.Detected) {
+                localResult
+            } else if (geminiVisionService.isConfigured()) {
+                // Dual AI: Graceful fallback to Gemini Flash Vision on low-confidence or unmapped items
+                geminiVisionService.analyze(bitmap)
+            } else {
+                localResult
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    override suspend fun scanFoodWithGemini(source: ImageSource): FoodScanResult {
+        val bitmap = withContext(Dispatchers.IO) { preprocessor.decodeUpright({ source.open() }) }
+            ?: return FoodScanResult.Failure("Couldn't read that image. Try another photo.")
+        return try {
+            geminiVisionService.analyze(bitmap)
         } finally {
             bitmap.recycle()
         }

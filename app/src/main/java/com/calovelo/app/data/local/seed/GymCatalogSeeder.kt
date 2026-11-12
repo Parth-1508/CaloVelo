@@ -43,6 +43,16 @@ class GymCatalogSeeder @Inject constructor(
         }
     }
 
+    suspend fun forceReseed() {
+        mutex.withLock {
+            withContext(Dispatchers.IO) {
+                val text = context.assets.open(SEED_ASSET).bufferedReader().use { it.readText() }
+                dao.upsertAll(GymSeedParser.parse(text))
+            }
+            seeded = true
+        }
+    }
+
     companion object {
         const val SEED_ASSET = "gym_seed.json"
     }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -18,6 +20,24 @@ android {
         versionCode = 2
         versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val properties = Properties()
+        val localPropertiesFile = project.rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            properties.load(localPropertiesFile.inputStream())
+        }
+        val geminiKey = properties.getProperty("GEMINI_API_KEY") ?: ""
+        val mapsKey = properties.getProperty("MAPS_API_KEY") ?: ""
+
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_1", "\"${properties.getProperty("GEMINI_BURNER_KEY_1") ?: ""}\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_2", "\"${properties.getProperty("GEMINI_BURNER_KEY_2") ?: ""}\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_3", "\"${properties.getProperty("GEMINI_BURNER_KEY_3") ?: ""}\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_4", "\"${properties.getProperty("GEMINI_BURNER_KEY_4") ?: ""}\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_5", "\"${properties.getProperty("GEMINI_BURNER_KEY_5") ?: ""}\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_6", "\"${properties.getProperty("GEMINI_BURNER_KEY_6") ?: ""}\"")
+        buildConfigField("String", "GEMINI_BURNER_KEY_7", "\"${properties.getProperty("GEMINI_BURNER_KEY_7") ?: ""}\"")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsKey
     }
 
     buildTypes {
@@ -109,6 +129,13 @@ dependencies {
 
     // Lottie for 3D animated Exercise Guides
     implementation("com.airbnb.android:lottie-compose:6.4.1")
+
+    // Google GenAI (Gemini Flash Vision)
+    implementation(libs.google.ai.generativeai)
+
+    // Google Maps Compose
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -41,6 +41,11 @@ interface NutritionRepository {
      */
     suspend fun scanFood(source: ImageSource): FoodScanResult
 
+    /**
+     * Runs precision cloud food analysis via Gemini Flash Vision API.
+     */
+    suspend fun scanFoodWithGemini(source: ImageSource): FoodScanResult
+
     companion object {
         const val MIN_GRAMS = 1
         const val MAX_GRAMS = 5_000

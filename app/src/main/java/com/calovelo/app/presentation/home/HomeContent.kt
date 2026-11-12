@@ -22,9 +22,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.calovelo.app.presentation.theme.CaloTheme
 import com.calovelo.app.presentation.theme.CaloThemeId
 
@@ -32,6 +34,7 @@ import com.calovelo.app.presentation.theme.CaloThemeId
 fun HomeContent(
     modifier: Modifier = Modifier,
     userName: String = "Athlete",
+    avatarUri: String? = null,
     dailyCalorieGoal: Int = 2500,
     dailyWaterGoalMl: Int = 3000,
     waterIntakeMl: Int = 0,
@@ -102,12 +105,21 @@ fun HomeContent(
                         .clickable(onClick = onOpenProfile),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = tokens.text,
-                        modifier = Modifier.size(26.dp)
-                    )
+                    if (!avatarUri.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = "Profile",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = tokens.text,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
             }
 

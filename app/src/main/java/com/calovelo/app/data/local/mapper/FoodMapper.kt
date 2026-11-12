@@ -25,7 +25,12 @@ fun FoodCatalogEntity.toDomain(): FoodItem = FoodItem(
     carbsPer100g = carbsPer100g,
     fatPer100g = fatPer100g,
     fiberPer100g = fiberPer100g,
-    suitableMealTypes = MealTypeCodec.decode(suitableMealTypes)
+    suitableMealTypes = MealTypeCodec.decode(suitableMealTypes),
+    isVeg = isVeg,
+    isVegan = isVegan,
+    isEgg = isEgg,
+    isNonVeg = isNonVeg,
+    containsLactose = containsLactose
 )
 
 /**

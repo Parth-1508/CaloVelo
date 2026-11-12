@@ -10,3 +10,6 @@
 app/build/
 .artifacts/
 /temp/
+docs/TECHNICAL_REVISION_PLAN.md
+docs/PLANS.md
+*.artifact.md

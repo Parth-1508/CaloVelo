@@ -6,6 +6,8 @@ import com.calovelo.app.data.local.dao.HealthSummaryDao
 import com.calovelo.app.data.local.dao.WaterLogDao
 import com.calovelo.app.data.local.entity.WaterLogEntity
 import com.calovelo.app.domain.repository.HydrationRepository
+import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import javax.inject.Inject
@@ -39,5 +41,13 @@ class HydrationRepositoryImpl @Inject constructor(
             // Recompute from the log so the summary can never drift from the source of truth.
             summaryDao.updateWaterIntake(epochDay, waterLogDao.getTotalBetween(dayStartMillis, dayEndMillis))
         }
+    }
+
+    override fun observeTodayLogs(): Flow<List<WaterLogEntity>> {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val dayStartMillis = today.atStartOfDay(zone).toInstant().toEpochMilli()
+        val dayEndMillis = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        return waterLogDao.observeBetween(dayStartMillis, dayEndMillis)
     }
 }

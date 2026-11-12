@@ -27,6 +27,7 @@ import com.calovelo.app.presentation.theme.CaloTheme
 import com.calovelo.app.presentation.theme.CaloThemeId
 import com.calovelo.app.presentation.training.TrainingContent
 import com.calovelo.app.presentation.workout.WorkoutContent
+import com.calovelo.app.presentation.workout.UnifiedWorkoutScreen
 import com.calovelo.app.presentation.gym.GymTrackerContent
 
 enum class BottomTab(
@@ -46,6 +47,7 @@ fun MainScaffold(
     currentThemeId: CaloThemeId,
     remindersEnabled: Boolean,
     userName: String,
+    avatarUri: String? = null,
     heightCm: Int,
     weightKg: Float,
     dailyCalorieGoal: Int,
@@ -65,6 +67,8 @@ fun MainScaffold(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    var activeSportId by remember { mutableStateOf("run") }
 
     // Determine if we should show the bottom bar (hide on detail screens)
     val showBottomBar = BottomTab.entries.any { tab ->
@@ -122,10 +126,18 @@ fun MainScaffold(
             composable(BottomTab.Home.route) {
                 HomeContent(
                     userName = userName,
+                    avatarUri = avatarUri,
                     dailyCalorieGoal = dailyCalorieGoal,
                     dailyWaterGoalMl = dailyWaterGoalMl,
                     waterIntakeMl = waterIntakeMl,
-                    onStartWorkout = onStartWorkout,
+                    onStartWorkout = {
+                        activeSportId = "run"
+                        navController.navigate(BottomTab.Training.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     onOpenScanner = {
                         navController.navigate(BottomTab.Scanner.route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -134,6 +146,7 @@ fun MainScaffold(
                         }
                     },
                     onOpenTraining = {
+                        activeSportId = "weight_training"
                         navController.navigate(BottomTab.Training.route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                             launchSingleTop = true
@@ -162,7 +175,10 @@ fun MainScaffold(
                 ScannerContent()
             }
             composable(BottomTab.Training.route) {
-                GymTrackerContent()
+                UnifiedWorkoutScreen(
+                    initialSportId = activeSportId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable(BottomTab.Insights.route) {
                 InsightsContent(
@@ -191,13 +207,6 @@ fun MainScaffold(
             // ── Detail screens (pushed on top, bottom bar hidden) ─────────
             composable("profile") {
                 ProfileScreen(
-                    userName = userName,
-                    heightCm = heightCm,
-                    weightKg = weightKg,
-                    onSave = { name, h, w ->
-                        onSaveProfile(name, h, w)
-                        navController.popBackStack()
-                    },
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -218,9 +227,6 @@ fun MainScaffold(
             }
             composable("hydration") {
                 HydrationContent(
-                    intakeMl = waterIntakeMl,
-                    goalMl = dailyWaterGoalMl,
-                    onQuickAdd = onQuickAddWater,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -228,8 +234,8 @@ fun MainScaffold(
                 CrewContent(onNavigateBack = { navController.popBackStack() })
             }
             composable("workout") {
-                WorkoutContent(
-                    onStartWorkout = onStartWorkout,
+                UnifiedWorkoutScreen(
+                    initialSportId = "run",
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

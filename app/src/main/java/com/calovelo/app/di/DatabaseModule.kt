@@ -25,7 +25,12 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): CaloveloDatabase =
         Room.databaseBuilder(context, CaloveloDatabase::class.java, CaloveloDatabase.DATABASE_NAME)
-            .addMigrations(CaloveloDatabase.MIGRATION_1_2, CaloveloDatabase.MIGRATION_2_3)
+            .addMigrations(
+                CaloveloDatabase.MIGRATION_1_2,
+                CaloveloDatabase.MIGRATION_2_3,
+                CaloveloDatabase.MIGRATION_3_4,
+                CaloveloDatabase.MIGRATION_4_5
+            )
             .apply {
                 // Debug builds may wipe the DB if a migration is missing while the schema is in
                 // flux. Release builds never do: they fail loudly instead of deleting user data.

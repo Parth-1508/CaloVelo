@@ -24,24 +24,36 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.calovelo.app.presentation.theme.CaloTheme
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HydrationContent(
     modifier: Modifier = Modifier,
-    intakeMl: Int = 2100,
-    goalMl: Int = 3000,
-    onQuickAdd: (Int) -> Unit = {},
+    viewModel: HydrationViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val tokens = CaloTheme.tokens
-    val progress = if (goalMl > 0) (intakeMl.toFloat() / goalMl).coerceIn(0f, 1f) else 0f
-    val percent = if (goalMl > 0) (intakeMl * 100 / goalMl) else 0
+    val intakeMl = uiState.intakeMl
+    val goalMl = uiState.goalMl
+    val progress = uiState.progress
+    val percent = uiState.percent
+    val logs = uiState.recentLogs
+
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
         animationSpec = tween(800),
         label = "hydrationProgress"
     )
+
+    val timeFormatter = remember {
+        DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
+    }
 
     Box(
         modifier = modifier
@@ -180,7 +192,7 @@ fun HydrationContent(
                     ) {
                         listOf(150, 250, 350, 500).forEach { amount ->
                             OutlinedButton(
-                                onClick = { onQuickAdd(amount) },
+                                onClick = { viewModel.quickAddWater(amount) },
                                 border = androidx.compose.foundation.BorderStroke(
                                     1.dp,
                                     tokens.hydrationMark.copy(alpha = 0.6f)
@@ -230,42 +242,44 @@ fun HydrationContent(
                         )
                     }
 
-                    val logs = listOf(
-                        "7:30 AM" to "250 ml — Morning",
-                        "9:15 AM" to "350 ml — Post-Workout",
-                        "12:00 PM" to "500 ml — Lunch",
-                        "3:30 PM" to "250 ml — Afternoon",
-                        "5:45 PM" to "350 ml — Pre-Dinner",
-                        "8:00 PM" to "400 ml — Evening"
-                    )
-
-                    logs.forEach { (time, detail) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                time,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = tokens.muted,
-                                modifier = Modifier.width(72.dp)
-                            )
-                            Text(
-                                detail,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = tokens.text,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                Icons.Default.WaterDrop,
-                                contentDescription = null,
-                                tint = tokens.hydrationMark.copy(alpha = 0.5f),
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        if (logs.last().first != time) {
-                            HorizontalDivider(color = tokens.border.copy(alpha = 0.2f))
+                    if (logs.isEmpty()) {
+                        Text(
+                            "No water entries logged yet today. Tap +250ml or +500ml above to record your intake!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = tokens.muted,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        logs.forEachIndexed { index, log ->
+                            val timeStr = timeFormatter.format(Instant.ofEpochMilli(log.timestamp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    timeStr,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = tokens.muted,
+                                    modifier = Modifier.width(80.dp)
+                                )
+                                Text(
+                                    "+${log.amountMl} ml",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = tokens.text,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    Icons.Default.WaterDrop,
+                                    contentDescription = null,
+                                    tint = tokens.hydrationMark,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            if (index < logs.lastIndex) {
+                                HorizontalDivider(color = tokens.border.copy(alpha = 0.2f))
+                            }
                         }
                     }
                 }

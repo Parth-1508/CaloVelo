@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.calovelo.app.domain.model.DietaryFilter
 import com.calovelo.app.domain.repository.SettingsRepository
 import com.calovelo.app.presentation.theme.CaloThemeId
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,6 +37,12 @@ class DataStoreSettingsRepository @Inject constructor(
     private val distanceGoalKey = floatPreferencesKey("weekly_distance_goal_km")
     private val heightKey = intPreferencesKey("height_cm")
     private val weightKey = floatPreferencesKey("weight_kg")
+    private val dietaryFilterKey = stringPreferencesKey("dietary_filter")
+    private val avatarUriKey = stringPreferencesKey("avatar_uri")
+    private val ageYearsKey = intPreferencesKey("age_years")
+    private val targetWeightKey = floatPreferencesKey("target_weight_kg")
+    private val bioTextKey = stringPreferencesKey("bio_text")
+    private val locationStringKey = stringPreferencesKey("location_string")
 
     private fun prefsFlow(): Flow<Preferences> = context.settingsDataStore.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
@@ -108,5 +115,55 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override suspend fun setWeightKg(kg: Float) {
         context.settingsDataStore.edit { it[weightKey] = kg }
+    }
+
+    override val dietaryFilter: Flow<DietaryFilter> = prefsFlow()
+        .map { prefs -> DietaryFilter.fromName(prefs[dietaryFilterKey]) }
+        .distinctUntilChanged()
+
+    override suspend fun setDietaryFilter(filter: DietaryFilter) {
+        context.settingsDataStore.edit { it[dietaryFilterKey] = filter.name }
+    }
+
+    override val avatarUri: Flow<String?> = prefsFlow()
+        .map { prefs -> prefs[avatarUriKey] }
+        .distinctUntilChanged()
+
+    override suspend fun setAvatarUri(uri: String?) {
+        context.settingsDataStore.edit { prefs ->
+            if (uri != null) prefs[avatarUriKey] = uri else prefs.remove(avatarUriKey)
+        }
+    }
+
+    override val ageYears: Flow<Int> = prefsFlow()
+        .map { prefs -> prefs[ageYearsKey] ?: 25 }
+        .distinctUntilChanged()
+
+    override suspend fun setAgeYears(age: Int) {
+        context.settingsDataStore.edit { it[ageYearsKey] = age }
+    }
+
+    override val targetWeightKg: Flow<Float> = prefsFlow()
+        .map { prefs -> prefs[targetWeightKey] ?: 70f }
+        .distinctUntilChanged()
+
+    override suspend fun setTargetWeightKg(weight: Float) {
+        context.settingsDataStore.edit { it[targetWeightKey] = weight }
+    }
+
+    override val bioText: Flow<String> = prefsFlow()
+        .map { prefs -> prefs[bioTextKey] ?: "Fitness & Nutrition Journey" }
+        .distinctUntilChanged()
+
+    override suspend fun setBioText(bio: String) {
+        context.settingsDataStore.edit { it[bioTextKey] = bio }
+    }
+
+    override val locationString: Flow<String> = prefsFlow()
+        .map { prefs -> prefs[locationStringKey] ?: "San Francisco, CA" }
+        .distinctUntilChanged()
+
+    override suspend fun setLocationString(location: String) {
+        context.settingsDataStore.edit { it[locationStringKey] = location }
     }
 }

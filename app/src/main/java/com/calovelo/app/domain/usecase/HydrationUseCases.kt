@@ -1,5 +1,6 @@
 package com.calovelo.app.domain.usecase
 
+import com.calovelo.app.data.local.entity.WaterLogEntity
 import com.calovelo.app.domain.repository.HydrationRepository
 import com.calovelo.app.domain.repository.ReminderScheduler
 import com.calovelo.app.domain.repository.SettingsRepository
@@ -10,6 +11,12 @@ class LogWaterUseCase @Inject constructor(
     private val repository: HydrationRepository
 ) {
     suspend operator fun invoke(amountMl: Int) = repository.logWater(amountMl)
+}
+
+class ObserveTodayWaterLogsUseCase @Inject constructor(
+    private val repository: HydrationRepository
+) {
+    operator fun invoke(): Flow<List<WaterLogEntity>> = repository.observeTodayLogs()
 }
 
 class ObserveHydrationRemindersUseCase @Inject constructor(

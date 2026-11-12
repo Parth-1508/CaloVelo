@@ -37,6 +37,7 @@ fun CaloveloNavHost(
                     currentThemeId = state.themeId,
                     remindersEnabled = state.remindersEnabled,
                     userName = state.userName,
+                    avatarUri = state.avatarUri,
                     heightCm = state.heightCm,
                     weightKg = state.weightKg,
                     dailyCalorieGoal = state.dailyCalorieGoal,

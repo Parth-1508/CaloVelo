@@ -50,6 +50,8 @@ data class FoodScannerUiState(
     val searchResults: List<FoodItem> = emptyList(),
     val sheetVisible: Boolean = false,
     val isSaving: Boolean = false,
+    val isGeminiScanning: Boolean = false,
+    val dietaryFilter: com.calovelo.app.domain.model.DietaryFilter = com.calovelo.app.domain.model.DietaryFilter.ALL,
     /** True once the meals were saved; the screen reacts by navigating back. */
     val saved: Boolean = false,
     val userMessage: String? = null

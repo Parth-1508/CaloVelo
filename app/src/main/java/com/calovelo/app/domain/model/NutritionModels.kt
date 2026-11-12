@@ -133,8 +133,22 @@ data class FoodItem(
     val fatPer100g: Double,
     val fiberPer100g: Double,
     /** Meals the auto-planner may suggest this food for. Empty = never auto-suggested. */
-    val suitableMealTypes: Set<MealType> = MealType.entries.toSet()
+    val suitableMealTypes: Set<MealType> = MealType.entries.toSet(),
+    val isVeg: Boolean = true,
+    val isVegan: Boolean = false,
+    val isEgg: Boolean = false,
+    val isNonVeg: Boolean = false,
+    val containsLactose: Boolean = false
 ) {
+    fun matchesFilter(filter: DietaryFilter): Boolean = when (filter) {
+        DietaryFilter.ALL -> true
+        DietaryFilter.VEG -> isVeg && !isNonVeg
+        DietaryFilter.VEGAN -> isVegan
+        DietaryFilter.EGG_ONLY -> (isVeg || isEgg) && !isNonVeg
+        DietaryFilter.NON_VEG -> true
+        DietaryFilter.LACTOSE_INTOLERANT -> !containsLactose
+    }
+
     val per100g: Macros
         get() = Macros(kcalPer100g, proteinPer100g, carbsPer100g, fatPer100g, fiberPer100g)
 }

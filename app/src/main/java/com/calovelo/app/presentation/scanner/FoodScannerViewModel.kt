@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
+import com.calovelo.app.domain.repository.SettingsRepository
+import com.calovelo.app.domain.usecase.ScanFoodWithGeminiUseCase
 import java.time.LocalTime
 import javax.inject.Inject
 
@@ -34,8 +36,10 @@ import javax.inject.Inject
 class FoodScannerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val scanFood: ScanFoodUseCase,
+    private val scanFoodWithGemini: ScanFoodWithGeminiUseCase,
     private val searchFoods: SearchFoodsUseCase,
     private val logMeals: LogMealsUseCase,
+    private val settingsRepository: SettingsRepository,
     clock: Clock
 ) : ViewModel() {
 
@@ -51,9 +55,11 @@ class FoodScannerViewModel @Inject constructor(
     private val query = MutableStateFlow("")
     private var nextItemId = 0
     private var scanJob: Job? = null
+    private var lastImageSource: ImageSource? = null
 
     init {
         observeSearch()
+        observeDietaryFilter()
     }
 
     // ---- Capture & detection ----------------------------------------------------------------
@@ -63,6 +69,7 @@ class FoodScannerViewModel @Inject constructor(
      * or Uri); [source] is read once to run detection.
      */
     fun onPhotoReady(source: ImageSource, previewModel: Any) {
+        lastImageSource = source
         scanJob?.cancel()
         _uiState.update {
             it.copy(
@@ -82,6 +89,33 @@ class FoodScannerViewModel @Inject constructor(
             } catch (e: Exception) {
                 FoodScanResult.Failure("Couldn't analyse that photo. Please try again.")
             }
+            applyScanResult(result)
+        }
+    }
+
+    /**
+     * Explicit trigger to re-run detection using Cloud Gemini Flash Vision.
+     */
+    fun onScanWithGemini() {
+        val source = lastImageSource ?: return
+        scanJob?.cancel()
+        _uiState.update {
+            it.copy(
+                phase = ScannerPhase.ANALYZING,
+                isGeminiScanning = true,
+                status = ScanStatus.Idle,
+                sheetVisible = false
+            )
+        }
+        scanJob = viewModelScope.launch {
+            val result = try {
+                scanFoodWithGemini(source)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                FoodScanResult.Failure("Gemini cloud analysis failed: ${e.localizedMessage}")
+            }
+            _uiState.update { it.copy(isGeminiScanning = false) }
             applyScanResult(result)
         }
     }
@@ -213,6 +247,14 @@ class FoodScannerViewModel @Inject constructor(
                 val initial = searchFoods("")
                 _uiState.update { it.copy(searchResults = initial) }
             } catch (_: Exception) {}
+        }
+    }
+
+    private fun observeDietaryFilter() {
+        viewModelScope.launch {
+            settingsRepository.dietaryFilter.collectLatest { filter ->
+                _uiState.update { it.copy(dietaryFilter = filter) }
+            }
         }
     }
 

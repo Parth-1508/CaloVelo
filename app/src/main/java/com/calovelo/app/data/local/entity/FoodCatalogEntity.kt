@@ -28,7 +28,12 @@ data class FoodCatalogEntity(
     /** Comma-separated MealType names the auto-planner may use this food for; empty = never. */
     @ColumnInfo(name = "suitable_meal_types") val suitableMealTypes: String,
     /** Where the row came from: [SOURCE_SEED] today, room for user-created foods later. */
-    @ColumnInfo(name = "source") val source: String
+    @ColumnInfo(name = "source") val source: String,
+    @ColumnInfo(name = "is_veg", defaultValue = "1") val isVeg: Boolean = true,
+    @ColumnInfo(name = "is_vegan", defaultValue = "0") val isVegan: Boolean = false,
+    @ColumnInfo(name = "is_egg", defaultValue = "0") val isEgg: Boolean = false,
+    @ColumnInfo(name = "is_non_veg", defaultValue = "0") val isNonVeg: Boolean = false,
+    @ColumnInfo(name = "contains_lactose", defaultValue = "0") val containsLactose: Boolean = false
 ) {
     companion object {
         const val SOURCE_SEED = "SEED"

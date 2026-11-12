@@ -38,6 +38,12 @@ class ScanFoodUseCase @Inject constructor(
     suspend operator fun invoke(source: ImageSource): FoodScanResult = repository.scanFood(source)
 }
 
+class ScanFoodWithGeminiUseCase @Inject constructor(
+    private val repository: NutritionRepository
+) {
+    suspend operator fun invoke(source: ImageSource): FoodScanResult = repository.scanFoodWithGemini(source)
+}
+
 class LogMealsUseCase @Inject constructor(
     private val repository: NutritionRepository
 ) {

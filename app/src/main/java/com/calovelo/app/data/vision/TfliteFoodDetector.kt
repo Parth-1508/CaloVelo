@@ -252,7 +252,8 @@ class TfliteFoodDetector @Inject constructor(
         const val MODEL_ASSET = "food_detector.tflite"
         const val LABELS_ASSET = "food_labels.txt"
 
-        private const val CONFIDENCE_THRESHOLD = 0.25f
+        // Raised from 0.25 to 0.60 to eliminate false-positive misclassifications (e.g. bread & butter as idli)
+        private const val CONFIDENCE_THRESHOLD = 0.60f
         private const val IOU_THRESHOLD = 0.45f
         private const val MAX_DETECTIONS = 20
         private const val MAX_THREADS = 4

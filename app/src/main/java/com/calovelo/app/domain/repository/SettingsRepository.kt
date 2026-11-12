@@ -1,5 +1,6 @@
 package com.calovelo.app.domain.repository
 
+import com.calovelo.app.domain.model.DietaryFilter
 import com.calovelo.app.presentation.theme.CaloThemeId
 import kotlinx.coroutines.flow.Flow
 
@@ -27,4 +28,22 @@ interface SettingsRepository {
 
     val weightKg: Flow<Float>
     suspend fun setWeightKg(kg: Float)
+
+    val dietaryFilter: Flow<DietaryFilter>
+    suspend fun setDietaryFilter(filter: DietaryFilter)
+
+    val avatarUri: Flow<String?>
+    suspend fun setAvatarUri(uri: String?)
+
+    val ageYears: Flow<Int>
+    suspend fun setAgeYears(age: Int)
+
+    val targetWeightKg: Flow<Float>
+    suspend fun setTargetWeightKg(weight: Float)
+
+    val bioText: Flow<String>
+    suspend fun setBioText(bio: String)
+
+    val locationString: Flow<String>
+    suspend fun setLocationString(location: String)
 }

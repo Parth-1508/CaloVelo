@@ -22,7 +22,12 @@ internal data class FoodSeedDto(
     val fatPer100g: Double,
     val fiberPer100g: Double = 0.0,
     /** Meals the planner may use the food for. Missing = all meals; empty list = never auto-suggest. */
-    val mealTypes: List<String>? = null
+    val mealTypes: List<String>? = null,
+    val isVeg: Boolean = true,
+    val isVegan: Boolean = false,
+    val isEgg: Boolean = false,
+    val isNonVeg: Boolean = false,
+    val containsLactose: Boolean = false
 )
 
 /**
@@ -75,7 +80,12 @@ object NutritionSeedParser {
             fatPer100g = fatPer100g,
             fiberPer100g = fiberPer100g,
             suitableMealTypes = MealTypeCodec.encode(types),
-            source = FoodCatalogEntity.SOURCE_SEED
+            source = FoodCatalogEntity.SOURCE_SEED,
+            isVeg = isVeg,
+            isVegan = isVegan,
+            isEgg = isEgg,
+            isNonVeg = isNonVeg,
+            containsLactose = containsLactose
         )
     }
 }

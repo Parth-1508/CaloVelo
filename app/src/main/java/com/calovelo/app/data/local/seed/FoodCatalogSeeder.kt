@@ -32,10 +32,24 @@ class FoodCatalogSeeder @Inject constructor(
         mutex.withLock {
             if (seeded) return
             withContext(Dispatchers.IO) {
-                if (dao.count() == 0) {
-                    val text = context.assets.open(SEED_ASSET).bufferedReader().use { it.readText() }
-                    dao.upsertAll(NutritionSeedParser.parse(text))
+                val currentCount = dao.count()
+                val text = context.assets.open(SEED_ASSET).bufferedReader().use { it.readText() }
+                val parsed = NutritionSeedParser.parse(text)
+                if (currentCount < parsed.size) {
+                    dao.upsertAll(parsed)
                 }
+            }
+            seeded = true
+        }
+    }
+
+    suspend fun forceReseed() {
+        mutex.withLock {
+            withContext(Dispatchers.IO) {
+                dao.deleteAll()
+                val text = context.assets.open(SEED_ASSET).bufferedReader().use { it.readText() }
+                val parsed = NutritionSeedParser.parse(text)
+                dao.upsertAll(parsed)
             }
             seeded = true
         }

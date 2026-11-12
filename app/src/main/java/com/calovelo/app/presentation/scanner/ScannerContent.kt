@@ -47,6 +47,8 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import com.calovelo.app.domain.model.FoodItem
 import com.calovelo.app.domain.model.ImageSource
 import com.calovelo.app.domain.model.MealType
@@ -208,6 +210,7 @@ fun ScannerContent(
                     onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     onSwitchToManual = { scannerMode = ScannerMode.MANUAL },
                     onRetake = viewModel::onRetake,
+                    onScanWithGemini = viewModel::onScanWithGemini,
                     modifier = Modifier.weight(1f)
                 )
             } else {
@@ -260,6 +263,7 @@ private fun CameraVisionSection(
     onRequestPermission: () -> Unit,
     onSwitchToManual: () -> Unit,
     onRetake: () -> Unit,
+    onScanWithGemini: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -294,7 +298,86 @@ private fun CameraVisionSection(
         } else if (uiState.phase == ScannerPhase.ANALYZING) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CircularProgressIndicator(color = tokens.aiMark)
-                Text("AI is detecting food & estimating portions...", color = tokens.text, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    if (uiState.isGeminiScanning) "Gemini Flash Vision analyzing plate..." else "AI is detecting food & estimating portions...",
+                    color = tokens.text,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        } else if (uiState.phase == ScannerPhase.REVIEW && uiState.capturedImage != null) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                AsyncImage(
+                    model = uiState.capturedImage,
+                    contentDescription = "Captured Meal",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Top Controls: Retake & Gemini Flash Scan
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.TopCenter),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = onRetake,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = tokens.surface.copy(alpha = 0.85f),
+                            contentColor = tokens.text
+                        )
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Retake")
+                    }
+
+                    Button(
+                        onClick = onScanWithGemini,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = tokens.aiMark,
+                            contentColor = tokens.aiInk
+                        )
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Gemini AI Scan", fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                if (uiState.status is ScanStatus.NothingDetected) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(tokens.surface.copy(alpha = 0.9f))
+                            .border(1.dp, tokens.border.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                "Local AI confidence low (<60%)",
+                                color = tokens.text,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                "Tap 'Gemini AI Scan' for precision cloud recognition of everyday staples, or search below.",
+                                color = tokens.muted,
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
             }
         } else if (uiState.status is ScanStatus.ModelUnavailable) {
             Column(
@@ -601,6 +684,32 @@ private fun PlateDeckCard(
                                 Icon(Icons.Default.Close, contentDescription = "Remove", tint = tokens.muted, modifier = Modifier.size(16.dp))
                             }
                         }
+                    }
+                }
+            }
+
+            // Dietary Filter Warning
+            val conflictingItem = uiState.items.firstOrNull { !it.food.matchesFilter(uiState.dietaryFilter) }
+            if (conflictingItem != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF3E2723))
+                        .border(1.dp, Color(0xFFFF8A65).copy(alpha = 0.6f), RoundedCornerShape(14.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF8A65), modifier = Modifier.size(20.dp))
+                        Text(
+                            "Dietary Warning: ${conflictingItem.food.displayName} contains ingredients conflicting with your active ${uiState.dietaryFilter.displayName} diet filter.",
+                            color = Color(0xFFFFCCBC),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

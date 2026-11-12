@@ -32,7 +32,7 @@ import com.calovelo.app.data.local.entity.WorkoutSessionEntity
         GymWorkoutEntity::class,
         ExerciseSetEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class CaloveloDatabase : RoomDatabase() {
@@ -195,6 +195,19 @@ abstract class CaloveloDatabase : RoomDatabase() {
                     "CREATE INDEX IF NOT EXISTS `index_exercise_set_exercise_id` " +
                         "ON `exercise_set` (`exercise_id`)"
                 )
+            }
+        }
+
+        /**
+         * v4 -> v5: adds dietary and allergen flag columns to `food_catalog` table.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `food_catalog` ADD COLUMN `is_veg` INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE `food_catalog` ADD COLUMN `is_vegan` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `food_catalog` ADD COLUMN `is_egg` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `food_catalog` ADD COLUMN `is_non_veg` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `food_catalog` ADD COLUMN `contains_lactose` INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
